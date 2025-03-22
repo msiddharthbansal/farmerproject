@@ -1,0 +1,316 @@
+# Hindi translation for FarmConnect.
+# This file contains translations for the FarmConnect application.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: FarmConnect 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-22 00:41+0000\n"
+"PO-Revision-Date: 2025-03-22 00:41+0000\n"
+"Last-Translator: AI Assistant\n"
+"Language-Team: Hindi\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: Common navigation items
+msgid "Home"
+msgstr "होम"
+
+msgid "Products"
+msgstr "उत्पाद"
+
+msgid "About"
+msgstr "हमारे बारे में"
+
+msgid "Contact"
+msgstr "संपर्क"
+
+msgid "Login"
+msgstr "लॉगिन"
+
+msgid "Signup"
+msgstr "साइनअप"
+
+msgid "Profile"
+msgstr "प्रोफाइल"
+
+msgid "Logout"
+msgstr "लॉग आउट"
+
+msgid "Language"
+msgstr "भाषा"
+
+#: User types
+msgid "Farmer Dashboard"
+msgstr "किसान डैशबोर्ड"
+
+msgid "Dashboard"
+msgstr "डैशबोर्ड"
+
+msgid "My Products"
+msgstr "मेरे उत्पाद"
+
+msgid "Add Product"
+msgstr "उत्पाद जोड़ें"
+
+msgid "Orders"
+msgstr "ऑर्डर"
+
+msgid "My Orders"
+msgstr "मेरे ऑर्डर"
+
+#: Product related
+msgid "Category"
+msgstr "श्रेणी"
+
+msgid "Price"
+msgstr "कीमत"
+
+msgid "Quantity"
+msgstr "मात्रा"
+
+msgid "Description"
+msgstr "विवरण"
+
+msgid "Farm Fresh Products"
+msgstr "खेत से ताजे उत्पाद"
+
+msgid "View"
+msgstr "देखें"
+
+msgid "View Details"
+msgstr "विवरण देखें"
+
+msgid "Add to Cart"
+msgstr "कार्ट में जोड़ें"
+
+msgid "Order Now"
+msgstr "अभी ऑर्डर करें"
+
+msgid "In Stock"
+msgstr "स्टॉक में"
+
+msgid "Out of Stock"
+msgstr "स्टॉक में नहीं है"
+
+msgid "Limited Stock"
+msgstr "सीमित स्टॉक"
+
+msgid "Showing"
+msgstr "दिखा रहा है"
+
+msgid "of"
+msgstr "में से"
+
+msgid "products"
+msgstr "उत्पाद"
+
+#: Product specifics
+msgid "Top 5 Complementary Products"
+msgstr "शीर्ष 5 पूरक उत्पाद"
+
+msgid "Products that pair perfectly with"
+msgstr "उत्पाद जो इसके साथ एकदम सही हैं"
+
+msgid "Review Summary"
+msgstr "समीक्षा सारांश"
+
+msgid "reviews"
+msgstr "समीक्षाएं"
+
+msgid "Write a Review"
+msgstr "समीक्षा लिखें"
+
+msgid "Edit Your Review"
+msgstr "अपनी समीक्षा संपादित करें"
+
+msgid "Your Rating"
+msgstr "आपकी रेटिंग"
+
+msgid "Your Review"
+msgstr "आपकी समीक्षा"
+
+msgid "Submit Review"
+msgstr "समीक्षा सबमिट करें"
+
+msgid "Update Review"
+msgstr "समीक्षा अपडेट करें"
+
+msgid "Login to write a review"
+msgstr "समीक्षा लिखने के लिए लॉगिन करें"
+
+msgid "Customer Reviews"
+msgstr "ग्राहक समीक्षाएं"
+
+msgid "No Reviews Yet"
+msgstr "अभी तक कोई समीक्षा नहीं"
+
+msgid "Be the first to review this product!"
+msgstr "इस उत्पाद की समीक्षा करने वाले पहले व्यक्ति बनें!"
+
+msgid "ago"
+msgstr "पहले"
+
+#: Filters
+msgid "Categories"
+msgstr "श्रेणियां"
+
+msgid "All Categories"
+msgstr "सभी श्रेणियां"
+
+msgid "Price Range"
+msgstr "मूल्य सीमा"
+
+msgid "Min ₹"
+msgstr "न्यूनतम ₹"
+
+msgid "Max ₹"
+msgstr "अधिकतम ₹"
+
+msgid "Availability"
+msgstr "उपलब्धता"
+
+msgid "In Stock Only"
+msgstr "केवल स्टॉक में"
+
+msgid "Sort By"
+msgstr "क्रमबद्ध करें"
+
+msgid "Default"
+msgstr "डिफ़ॉल्ट"
+
+msgid "Price: Low to High"
+msgstr "मूल्य: कम से अधिक"
+
+msgid "Price: High to Low"
+msgstr "मूल्य: अधिक से कम"
+
+msgid "Newest First"
+msgstr "सबसे नया पहले"
+
+msgid "Highest Rated"
+msgstr "सर्वोच्च रेटेड"
+
+msgid "Apply Filters"
+msgstr "फ़िल्टर लागू करें"
+
+msgid "Clear Filters"
+msgstr "फ़िल्टर साफ़ करें"
+
+msgid "Active Filters"
+msgstr "सक्रिय फ़िल्टर"
+
+msgid "Min Price"
+msgstr "न्यूनतम मूल्य"
+
+msgid "Max Price"
+msgstr "अधिकतम मूल्य"
+
+msgid "Sorted By"
+msgstr "द्वारा क्रमबद्ध"
+
+msgid "Featured Farmers"
+msgstr "प्रमुख किसान"
+
+msgid "Search products by name, farmer..."
+msgstr "नाम, किसान से उत्पाद खोजें..."
+
+msgid "Search Results for"
+msgstr "के लिए खोज परिणाम"
+
+#: Product details
+msgid "Availability"
+msgstr "उपलब्धता"
+
+msgid "units available"
+msgstr "इकाइयां उपलब्ध"
+
+msgid "Only"
+msgstr "केवल"
+
+msgid "units left"
+msgstr "इकाइयां शेष"
+
+msgid "Added on"
+msgstr "पर जोड़ा गया"
+
+msgid "Inclusive of all taxes"
+msgstr "सभी करों सहित"
+
+msgid "Login to Order"
+msgstr "ऑर्डर करने के लिए लॉगिन करें"
+
+msgid "Get notified when back in stock"
+msgstr "जब स्टॉक में वापस आए तो सूचित किया जाए"
+
+#: Footer
+msgid "FarmConnect"
+msgstr "फार्मकनेक्ट"
+
+msgid "Connecting farmers directly to consumers."
+msgstr "किसानों को सीधे उपभोक्ताओं से जोड़ना।"
+
+msgid "Quick Links"
+msgstr "त्वरित लिंक"
+
+msgid "About Us"
+msgstr "हमारे बारे में"
+
+msgid "Contact Us"
+msgstr "हमसे संपर्क करें"
+
+msgid "123 Farm Road"
+msgstr "123 फार्म रोड"
+
+msgid "Rural District"
+msgstr "ग्रामीण जिला"
+
+msgid "Email:"
+msgstr "ईमेल:"
+
+msgid "Phone:"
+msgstr "फोन:"
+
+msgid "All rights reserved."
+msgstr "सर्वाधिकार सुरक्षित।"
+
+#: NPOP Certification
+msgid "NPOP Certified"
+msgstr "एनपीओपी प्रमाणित"
+
+msgid "Organic"
+msgstr "जैविक"
+
+#: Payment
+msgid "Payment Method"
+msgstr "भुगतान का तरीका"
+
+msgid "Card Number"
+msgstr "कार्ड नंबर"
+
+msgid "Expiry Date"
+msgstr "समाप्ति तिथि"
+
+msgid "CVV"
+msgstr "सीवीवी"
+
+msgid "UPI ID"
+msgstr "यूपीआई आईडी"
+
+msgid "Cash on Delivery"
+msgstr "डेलिवरी पर नकद भुगतान"
+
+msgid "Credit/Debit Card"
+msgstr "क्रेडिट/डेबिट कार्ड"
+
+msgid "UPI"
+msgstr "यूपीआई"
+
+msgid "Net Banking"
+msgstr "नेट बैंकिंग"
+
+msgid "Translation Test"
+msgstr "अनुवाद परीक्षण" 

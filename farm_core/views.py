@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Sum, Count, Avg
 from django.contrib.auth import logout as auth_logout
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from .models import User, Product, ProductCategory, Order, CartItem, PaymentTransaction, ProductReview
 from .forms import UserSignupForm, ProductForm, OrderForm, UserProfileForm, ProductReviewForm, FarmerProfileForm
 from django.utils.safestring import mark_safe

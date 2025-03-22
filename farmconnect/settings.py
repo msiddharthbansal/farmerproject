@@ -106,11 +106,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
-USE_I18N = True
-
+USE_I18N = False
 USE_TZ = True
 
 
@@ -134,16 +131,4 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Static files configuration
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-]
-
-# Internationalization settings for language toggle
-from django.utils.translation import gettext_lazy as _
-
-LANGUAGES = [
-    ('en', _('English')),
-    ('hi', _('Hindi')),
-]
-
-LOCALE_PATHS = [
-    BASE_DIR / 'locale',
 ]

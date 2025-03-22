@@ -1,0 +1,316 @@
+# English translation for FarmConnect.
+# This file serves as the base for translations.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: FarmConnect 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-22 00:41+0000\n"
+"PO-Revision-Date: 2025-03-22 00:41+0000\n"
+"Last-Translator: AI Assistant\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: Common navigation items
+msgid "Home"
+msgstr "Home"
+
+msgid "Products"
+msgstr "Products"
+
+msgid "About"
+msgstr "About"
+
+msgid "Contact"
+msgstr "Contact"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Signup"
+msgstr "Signup"
+
+msgid "Profile"
+msgstr "Profile"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Language"
+msgstr "Language"
+
+#: User types
+msgid "Farmer Dashboard"
+msgstr "Farmer Dashboard"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "My Products"
+msgstr "My Products"
+
+msgid "Add Product"
+msgstr "Add Product"
+
+msgid "Orders"
+msgstr "Orders"
+
+msgid "My Orders"
+msgstr "My Orders"
+
+#: Product related
+msgid "Category"
+msgstr "Category"
+
+msgid "Price"
+msgstr "Price"
+
+msgid "Quantity"
+msgstr "Quantity"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Farm Fresh Products"
+msgstr "Farm Fresh Products"
+
+msgid "View"
+msgstr "View"
+
+msgid "View Details"
+msgstr "View Details"
+
+msgid "Add to Cart"
+msgstr "Add to Cart"
+
+msgid "Order Now"
+msgstr "Order Now"
+
+msgid "In Stock"
+msgstr "In Stock"
+
+msgid "Out of Stock"
+msgstr "Out of Stock"
+
+msgid "Limited Stock"
+msgstr "Limited Stock"
+
+msgid "Showing"
+msgstr "Showing"
+
+msgid "of"
+msgstr "of"
+
+msgid "products"
+msgstr "products"
+
+#: Product specifics
+msgid "Top 5 Complementary Products"
+msgstr "Top 5 Complementary Products"
+
+msgid "Products that pair perfectly with"
+msgstr "Products that pair perfectly with"
+
+msgid "Review Summary"
+msgstr "Review Summary"
+
+msgid "reviews"
+msgstr "reviews"
+
+msgid "Write a Review"
+msgstr "Write a Review"
+
+msgid "Edit Your Review"
+msgstr "Edit Your Review"
+
+msgid "Your Rating"
+msgstr "Your Rating"
+
+msgid "Your Review"
+msgstr "Your Review"
+
+msgid "Submit Review"
+msgstr "Submit Review"
+
+msgid "Update Review"
+msgstr "Update Review"
+
+msgid "Login to write a review"
+msgstr "Login to write a review"
+
+msgid "Customer Reviews"
+msgstr "Customer Reviews"
+
+msgid "No Reviews Yet"
+msgstr "No Reviews Yet"
+
+msgid "Be the first to review this product!"
+msgstr "Be the first to review this product!"
+
+msgid "ago"
+msgstr "ago"
+
+#: Filters
+msgid "Categories"
+msgstr "Categories"
+
+msgid "All Categories"
+msgstr "All Categories"
+
+msgid "Price Range"
+msgstr "Price Range"
+
+msgid "Min ₹"
+msgstr "Min ₹"
+
+msgid "Max ₹"
+msgstr "Max ₹"
+
+msgid "Availability"
+msgstr "Availability"
+
+msgid "In Stock Only"
+msgstr "In Stock Only"
+
+msgid "Sort By"
+msgstr "Sort By"
+
+msgid "Default"
+msgstr "Default"
+
+msgid "Price: Low to High"
+msgstr "Price: Low to High"
+
+msgid "Price: High to Low"
+msgstr "Price: High to Low"
+
+msgid "Newest First"
+msgstr "Newest First"
+
+msgid "Highest Rated"
+msgstr "Highest Rated"
+
+msgid "Apply Filters"
+msgstr "Apply Filters"
+
+msgid "Clear Filters"
+msgstr "Clear Filters"
+
+msgid "Active Filters"
+msgstr "Active Filters"
+
+msgid "Min Price"
+msgstr "Min Price"
+
+msgid "Max Price"
+msgstr "Max Price"
+
+msgid "Sorted By"
+msgstr "Sorted By"
+
+msgid "Featured Farmers"
+msgstr "Featured Farmers"
+
+msgid "Search products by name, farmer..."
+msgstr "Search products by name, farmer..."
+
+msgid "Search Results for"
+msgstr "Search Results for"
+
+#: Product details
+msgid "Availability"
+msgstr "Availability"
+
+msgid "units available"
+msgstr "units available"
+
+msgid "Only"
+msgstr "Only"
+
+msgid "units left"
+msgstr "units left"
+
+msgid "Added on"
+msgstr "Added on"
+
+msgid "Inclusive of all taxes"
+msgstr "Inclusive of all taxes"
+
+msgid "Login to Order"
+msgstr "Login to Order"
+
+msgid "Get notified when back in stock"
+msgstr "Get notified when back in stock"
+
+#: Footer
+msgid "FarmConnect"
+msgstr "FarmConnect"
+
+msgid "Connecting farmers directly to consumers."
+msgstr "Connecting farmers directly to consumers."
+
+msgid "Quick Links"
+msgstr "Quick Links"
+
+msgid "About Us"
+msgstr "About Us"
+
+msgid "Contact Us"
+msgstr "Contact Us"
+
+msgid "123 Farm Road"
+msgstr "123 Farm Road"
+
+msgid "Rural District"
+msgstr "Rural District"
+
+msgid "Email:"
+msgstr "Email:"
+
+msgid "Phone:"
+msgstr "Phone:"
+
+msgid "All rights reserved."
+msgstr "All rights reserved."
+
+#: NPOP Certification
+msgid "NPOP Certified"
+msgstr "NPOP Certified"
+
+msgid "Organic"
+msgstr "Organic"
+
+#: Payment
+msgid "Payment Method"
+msgstr "Payment Method"
+
+msgid "Card Number"
+msgstr "Card Number"
+
+msgid "Expiry Date"
+msgstr "Expiry Date"
+
+msgid "CVV"
+msgstr "CVV"
+
+msgid "UPI ID"
+msgstr "UPI ID"
+
+msgid "Cash on Delivery"
+msgstr "Cash on Delivery"
+
+msgid "Credit/Debit Card"
+msgstr "Credit/Debit Card"
+
+msgid "UPI"
+msgstr "UPI"
+
+msgid "Net Banking"
+msgstr "Net Banking"
+
+msgid "Translation Test"
+msgstr "Translation Test" 
