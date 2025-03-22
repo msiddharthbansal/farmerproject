@@ -483,22 +483,28 @@ class ProductDetailView(DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Add review form for logged-in users
+        product = self.get_object()
+        
+        # Add review form and user's existing review (if any)
+        context['form'] = ProductReviewForm()
         if self.request.user.is_authenticated:
-            # Check if user already reviewed this product
-            user_review = ProductReview.objects.filter(
-                product=self.object, 
-                user=self.request.user
-            ).first()
-            
-            if user_review:
+            try:
+                user_review = ProductReview.objects.get(product=product, user=self.request.user)
                 context['user_review'] = user_review
                 context['form'] = ProductReviewForm(instance=user_review)
-            else:
-                context['form'] = ProductReviewForm()
-                
-        # Get latest reviews for this product
-        context['reviews'] = self.object.latest_reviews
+            except ProductReview.DoesNotExist:
+                pass
+        
+        # Get all reviews for the product
+        context['reviews'] = product.reviews.all()
+        
+        # Get complementary products (frequently bought together)
+        context['complementary_products'] = product.get_recommended_products(limit=4)
+        
+        # Add cart info
+        cart = self.request.session.get('cart', {})
+        context['cart_count'] = sum(int(quantity) for quantity in cart.values())
+        
         return context
     
     def post(self, request, *args, **kwargs):

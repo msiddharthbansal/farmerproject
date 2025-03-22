@@ -78,6 +78,21 @@
     .star-rating-input label i.bi-star {
         color: #e2e2e2;
     }
+    .section-heading {
+        position: relative;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+    .section-heading:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 60px;
+        height: 3px;
+        background-color: #198754;
+    }
 </style>
 {% endblock %}
 
@@ -151,7 +166,7 @@
                     <h1 class="card-title fw-bold">{{ product.name }}</h1>
                     
                     <div class="d-flex mb-3 align-items-center">
-                        <span class="badge bg-secondary me-2 p-2">{{ product.category.name }}</span>
+                        <span class="badge bg-success me-2 p-2">{{ product.category.name }}</span>
                         <div class="text-muted small me-3">
                             <i class="bi bi-calendar"></i> {% trans "Added on" %} {{ product.created_at|date }}
                         </div>
@@ -479,6 +494,65 @@
             </div>
         </div>
     </div>
+    
+    <!-- Complementary Products (Frequently Used Together) -->
+    {% if complementary_products %}
+    <div class="complementary-products mb-5">
+        <h3 class="section-heading mb-2">{% trans "Top 5 Complementary Products" %}</h3>
+        <p class="text-muted mb-4">{% trans "Products that pair perfectly with" %} {{ product.name }}</p>
+        
+        <div class="row row-cols-1 row-cols-md-5 g-4">
+            {% for product in complementary_products %}
+            <div class="col">
+                <div class="card h-100 product-card border-0 shadow-sm">
+                    <div class="position-relative">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 180px; object-fit: cover;">
+                        {% else %}
+                        <img src="https://placehold.co/600x400?text=Product" class="card-img-top" alt="{{ product.name }}" style="height: 180px; object-fit: cover;">
+                        {% endif %}
+                        
+                        {% if product.is_organic %}
+                        <div class="position-absolute top-0 start-0 p-2">
+                            {% if product.farmer.is_npop_verified %}
+                            <span class="badge bg-success"><i class="bi bi-patch-check-fill"></i> NPOP</span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="bi bi-flower1"></i> Organic</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 1rem;">{{ product.name }}</h5>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="star-rating me-2 small">
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= product.avg_rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% elif forloop.counter <= product.avg_rating|add:"0.5" and forloop.counter > product.avg_rating %}
+                                    <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                    <i class="bi bi-star inactive"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="text-muted small">({{ product.review_count }})</span>
+                        </div>
+                        <p class="fw-bold text-success mb-0">₹{{ product.price }}</p>
+                    </div>
+                    
+                    <div class="card-footer bg-transparent">
+                        <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="btn btn-sm btn-outline-success w-100">
+                            <i class="bi bi-eye"></i> {% trans "View" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Related Products -->
     <div class="related-products mb-5">

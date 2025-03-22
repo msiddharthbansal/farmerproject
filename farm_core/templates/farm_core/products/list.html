@@ -337,7 +337,6 @@
                     <div class="card product-card h-100 border-0 shadow-sm">
                         <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="text-decoration-none text-dark">
                             <div class="position-relative">
-                                <span class="badge bg-primary category-badge">{{ product.category.name }}</span>
                                 <div class="product-img-container">
                                     {% if product.image %}
                                     <img src="{{ product.image.url }}" class="product-img" alt="{{ product.name }}">

@@ -96,6 +96,70 @@ class Product(models.Model):
     def latest_reviews(self):
         """Return the 5 most recent reviews"""
         return self.reviews.all()[:5]
+    
+    def get_recommended_products(self, limit=5):
+        """Get the best 5 products that are recommended to use with this product"""
+        # Get directly linked recommendations ordered by strength
+        direct_recommendations = ProductRecommendation.objects.filter(
+            primary_product=self
+        ).select_related('recommended_product').order_by('-strength')[:limit]
+        
+        recommended_products = [rec.recommended_product for rec in direct_recommendations]
+        
+        # If we don't have enough direct recommendations, get complementary category products
+        if len(recommended_products) < limit:
+            # Get complementary categories (this mapping could be moved to a separate model)
+            complementary_categories = {
+                'Vegetables': ['Spices', 'Oils'],
+                'Fruits': ['Dairy', 'Honey'],
+                'Dairy': ['Fruits', 'Beverages'],
+                'Grains': ['Vegetables', 'Dairy'],
+                'Pulses': ['Grains', 'Spices'],
+                'Spices': ['Vegetables', 'Pulses'],
+            }
+            
+            # Get the current product's category name
+            current_category = self.category.name if self.category else None
+            
+            # Find complementary categories for the current product
+            target_categories = []
+            if current_category and current_category in complementary_categories:
+                target_categories = complementary_categories[current_category]
+            
+            # Get highly-rated products from complementary categories
+            if target_categories:
+                category_products = Product.objects.filter(
+                    category__name__in=target_categories,
+                    is_available=True
+                ).exclude(
+                    id=self.id
+                ).exclude(
+                    id__in=[p.id for p in recommended_products]
+                ).annotate(
+                    avg_rating=models.Avg('reviews__rating'),
+                    num_reviews=models.Count('reviews')
+                ).order_by('-avg_rating', '-num_reviews')[:limit-len(recommended_products)]
+                
+                recommended_products.extend(list(category_products))
+        
+        # If we still don't have enough recommendations, add top-rated products
+        if len(recommended_products) < limit:
+            # Get popular products based on ratings and review count
+            popular_products = Product.objects.filter(
+                is_available=True
+            ).exclude(
+                id=self.id
+            ).exclude(
+                id__in=[p.id for p in recommended_products]
+            ).annotate(
+                avg_rating=models.Avg('reviews__rating'),
+                num_reviews=models.Count('reviews')
+            ).order_by('-avg_rating', '-num_reviews')[:limit-len(recommended_products)]
+            
+            recommended_products.extend(list(popular_products))
+            
+        # Limit to exactly the requested number of products
+        return recommended_products[:limit]
 
 
 class Order(models.Model):
@@ -214,3 +278,26 @@ class ProductReview(models.Model):
     
     def __str__(self):
         return f"{self.user.username}'s {self.rating}-star review on {self.product.name}"
+
+
+class ProductRecommendation(models.Model):
+    """
+    Model to store product recommendations for complementary products
+    """
+    primary_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='recommendations_as_primary')
+    recommended_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='recommendations_as_secondary')
+    strength = models.IntegerField(default=1, help_text="Higher value means stronger recommendation")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('primary_product', 'recommended_product')
+        ordering = ['-strength']
+    
+    def __str__(self):
+        return f"{self.primary_product.name} → {self.recommended_product.name}"
+    
+    def clean(self):
+        # Prevent self-recommendation
+        if self.primary_product == self.recommended_product:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("A product cannot recommend itself.")
