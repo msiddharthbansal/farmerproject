@@ -1,0 +1,155 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Place Order" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-product-img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .order-summary {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:product_detail' pk=product.id %}">{{ product.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Place Order" %}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h2 mb-4">{% trans "Place Order" %}</h1>
+
+    <div class="row">
+        <div class="col-md-7 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">{% trans "Product Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="order-product-img">
+                            {% else %}
+                            <div class="order-product-img bg-light d-flex align-items-center justify-content-center">
+                                <i class="bi bi-image text-secondary fs-1"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="h5 mb-2">{{ product.name }}</h3>
+                            <p class="mb-1"><strong>{% trans "Price:" %}</strong> ₹{{ product.price }} / {{ product.get_unit_display }}</p>
+                            <p class="mb-1"><strong>{% trans "Farmer:" %}</strong> {{ product.farmer.get_full_name|default:product.farmer.username }}</p>
+                            <p class="mb-1"><strong>{% trans "Available:" %}</strong> {{ product.quantity_available }} {{ product.get_unit_display }}</p>
+                            {% if product.is_organic %}
+                            <span class="badge bg-success">{% trans "Organic" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h5>{% trans "Product Description" %}</h5>
+                        <p>{{ product.description }}</p>
+                    </div>
+                    
+                    {% if product.nutritional_info %}
+                    <div>
+                        <h5>{% trans "Nutritional Information" %}</h5>
+                        <p>{{ product.nutritional_info }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">{% trans "Order Details" %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">{% trans "Quantity" %} <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" value="{{ request.GET.quantity|default:'1' }}" min="1" max="{{ product.quantity_available }}" required>
+                            <div class="form-text">{% trans "Maximum available:" %} {{ product.quantity_available }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="shipping_address" class="form-label">{% trans "Shipping Address" %} <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="shipping_address" name="shipping_address" rows="3" required>{{ request.user.address|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="order-summary mb-4">
+                            <h5 class="mb-3">{% trans "Order Summary" %}</h5>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>{% trans "Price" %}</span>
+                                <span>₹{{ product.price }} / {{ product.get_unit_display }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>{% trans "Quantity" %}</span>
+                                <span id="summary-quantity">{{ request.GET.quantity|default:'1' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>{% trans "Shipping" %}</span>
+                                <span>₹0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>{% trans "Total" %}</span>
+                                <span id="summary-total">₹{{ product.price|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-bag-check me-2"></i>{% trans "Place Order" %}
+                            </button>
+                            <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>{% trans "Back to Product" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const quantityInput = document.getElementById('quantity');
+        const summaryQuantity = document.getElementById('summary-quantity');
+        const summaryTotal = document.getElementById('summary-total');
+        const productPrice = {{ product.price }};
+        
+        // Update the order summary when quantity changes
+        quantityInput.addEventListener('input', function() {
+            const quantity = parseInt(this.value) || 1;
+            const total = (productPrice * quantity).toFixed(2);
+            
+            summaryQuantity.textContent = quantity;
+            summaryTotal.textContent = '₹' + total;
+        });
+    });
+</script>
+{% endblock %} 

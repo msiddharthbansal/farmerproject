@@ -1,0 +1,338 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Payment" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .payment-option {
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .payment-option:hover {
+        border-color: #198754;
+    }
+    .payment-option.selected {
+        border-color: #198754;
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+    .payment-option .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .order-item {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    .order-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .card-input {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    #card-container {
+        min-height: 10rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:cart' %}">{% trans "Cart" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:checkout' %}">{% trans "Checkout" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Payment" %}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h2 mb-4">{% trans "Complete Your Payment" %}</h1>
+    
+    {% if error %}
+        <div class="alert alert-danger">
+            {% trans "An error occurred while loading your payment information. Please try again or contact support." %}
+        </div>
+        <a href="{% url 'farm_core:cart' %}" class="btn btn-primary">
+            <i class="bi bi-arrow-left me-2"></i>{% trans "Return to Cart" %}
+        </a>
+    {% else %}
+        <div class="row">
+            <!-- Payment Methods -->
+            <div class="col-lg-8 mb-4">
+                <div class="card payment-card h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">{% trans "Payment Method" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="payment-form" method="post">
+                            {% csrf_token %}
+                            
+                            <!-- Cash on Delivery -->
+                            <div class="payment-option {% if payment_method == 'cod' %}selected{% endif %}" data-method="cod">
+                                <div class="form-check d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="cashOnDelivery" value="cod" {% if payment_method == 'cod' %}checked{% endif %}>
+                                        <label class="form-check-label" for="cashOnDelivery">
+                                            <strong>{% trans "Cash on Delivery" %}</strong>
+                                            <p class="text-muted mb-0 small">{% trans "Pay when your order is delivered" %}</p>
+                                        </label>
+                                    </div>
+                                    <i class="bi bi-cash-coin fs-3 text-success"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- UPI -->
+                            <div class="payment-option {% if payment_method == 'upi' %}selected{% endif %}" data-method="upi">
+                                <div class="form-check d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="upiPayment" value="upi" {% if payment_method == 'upi' %}checked{% endif %}>
+                                        <label class="form-check-label" for="upiPayment">
+                                            <strong>{% trans "UPI" %}</strong>
+                                            <p class="text-muted mb-0 small">{% trans "Pay using UPI apps like Google Pay, PhonePe, etc." %}</p>
+                                        </label>
+                                    </div>
+                                    <i class="bi bi-phone fs-3 text-success"></i>
+                                </div>
+                                
+                                <div id="upi-container" class="mt-3 {% if payment_method != 'upi' %}d-none{% endif %}">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">{% trans "UPI ID" %}</span>
+                                        <input type="text" class="form-control" placeholder="yourname@upi" name="upi_id">
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="d-inline-block bg-light p-4 mb-3" style="border-radius: 10px;">
+                                            <i class="bi bi-qr-code fs-1 text-success"></i>
+                                            <p class="mb-0 mt-2 small">{% trans "Demo QR Code" %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Credit/Debit Card -->
+                            <div class="payment-option {% if payment_method == 'card' %}selected{% endif %}" data-method="card">
+                                <div class="form-check d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="cardPayment" value="card" {% if payment_method == 'card' %}checked{% endif %}>
+                                        <label class="form-check-label" for="cardPayment">
+                                            <strong>{% trans "Credit / Debit Card" %}</strong>
+                                            <p class="text-muted mb-0 small">{% trans "Pay using Visa, MasterCard, RuPay, or any other card" %}</p>
+                                        </label>
+                                    </div>
+                                    <i class="bi bi-credit-card fs-3 text-success"></i>
+                                </div>
+                                
+                                <div id="card-container" class="mt-3 {% if payment_method != 'card' %}d-none{% endif %}">
+                                    <div class="mb-3">
+                                        <label for="cardNumber" class="form-label">{% trans "Card Number" %}</label>
+                                        <input type="text" class="form-control" id="cardNumber" name="card_number" placeholder="1234 5678 9012 3456">
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="expiryDate" class="form-label">{% trans "Expiry Date" %}</label>
+                                            <input type="text" class="form-control" id="expiryDate" name="expiry_date" placeholder="MM/YY">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cvv" class="form-label">{% trans "CVV" %}</label>
+                                            <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cardholderName" class="form-label">{% trans "Cardholder Name" %}</label>
+                                        <input type="text" class="form-control" id="cardholderName" name="cardholder_name" placeholder="John Doe">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Net Banking -->
+                            <div class="payment-option {% if payment_method == 'netbanking' %}selected{% endif %}" data-method="netbanking">
+                                <div class="form-check d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input class="form-check-input" type="radio" name="payment_method" id="netBanking" value="netbanking" {% if payment_method == 'netbanking' %}checked{% endif %}>
+                                        <label class="form-check-label" for="netBanking">
+                                            <strong>{% trans "Net Banking" %}</strong>
+                                            <p class="text-muted mb-0 small">{% trans "Pay directly from your bank account" %}</p>
+                                        </label>
+                                    </div>
+                                    <i class="bi bi-bank fs-3 text-success"></i>
+                                </div>
+                                
+                                <div id="netbanking-container" class="mt-3 {% if payment_method != 'netbanking' %}d-none{% endif %}">
+                                    <div class="mb-3">
+                                        <label for="bank" class="form-label">{% trans "Select Bank" %}</label>
+                                        <select class="form-select" id="bank" name="bank">
+                                            <option value="">{% trans "Choose your bank" %}</option>
+                                            <option value="hdfc">HDFC Bank</option>
+                                            <option value="sbi">State Bank of India</option>
+                                            <option value="icici">ICICI Bank</option>
+                                            <option value="axis">Axis Bank</option>
+                                            <option value="kotak">Kotak Mahindra Bank</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-lock-fill me-2"></i>{% trans "Pay" %} ₹{{ total_amount }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="col-lg-4 mb-4">
+                <div class="card payment-card sticky-lg-top" style="top: 2rem; z-index: 1;">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">{% trans "Order Summary" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">{% trans "Payment Reference:" %} {{ payment_reference }}</p>
+                        
+                        <div class="mb-3">
+                            {% for order in orders %}
+                            <div class="order-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <p class="mb-0">{{ order.product.name }}</p>
+                                        <p class="text-muted small mb-0">{{ order.quantity }} x ₹{{ order.product.price }}</p>
+                                    </div>
+                                    <span>₹{{ order.total_price }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Subtotal" %}</span>
+                            <span>₹{{ total_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Shipping" %}</span>
+                            <span>₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Tax" %}</span>
+                            <span>₹0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3 fw-bold">
+                            <span>{% trans "Total" %}</span>
+                            <span>₹{{ total_amount }}</span>
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <i class="bi bi-shield-lock me-1"></i> {% trans "Your payment is secure and encrypted." %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Payment option selection
+        const paymentOptions = document.querySelectorAll('.payment-option');
+        const radioInputs = document.querySelectorAll('input[name="payment_method"]');
+        
+        // Payment method containers
+        const upiContainer = document.getElementById('upi-container');
+        const cardContainer = document.getElementById('card-container');
+        const netbankingContainer = document.getElementById('netbanking-container');
+        
+        // Handle payment method selection
+        radioInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // Remove selected class from all options
+                paymentOptions.forEach(option => {
+                    option.classList.remove('selected');
+                });
+                
+                // Add selected class to chosen option
+                const selectedOption = this.closest('.payment-option');
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                }
+                
+                // Hide all method containers
+                upiContainer.classList.add('d-none');
+                cardContainer.classList.add('d-none');
+                netbankingContainer.classList.add('d-none');
+                
+                // Show the selected method container
+                const method = this.value;
+                if (method === 'upi') {
+                    upiContainer.classList.remove('d-none');
+                } else if (method === 'card') {
+                    cardContainer.classList.remove('d-none');
+                } else if (method === 'netbanking') {
+                    netbankingContainer.classList.remove('d-none');
+                }
+            });
+        });
+        
+        // Click on payment option selects the radio button
+        paymentOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+        
+        // Credit card input formatting
+        const cardNumberInput = document.getElementById('cardNumber');
+        if (cardNumberInput) {
+            cardNumberInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                let formattedValue = '';
+                
+                for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 4 === 0) {
+                        formattedValue += ' ';
+                    }
+                    formattedValue += value[i];
+                }
+                
+                e.target.value = formattedValue;
+            });
+        }
+        
+        // Expiry date formatting
+        const expiryDateInput = document.getElementById('expiryDate');
+        if (expiryDateInput) {
+            expiryDateInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                if (value.length > 2) {
+                    e.target.value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                } else {
+                    e.target.value = value;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

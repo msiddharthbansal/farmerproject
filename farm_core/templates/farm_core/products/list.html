@@ -85,6 +85,35 @@
     .star-rating .bi-star-fill.inactive {
         color: #e2e2e2;
     }
+    .search-bar {
+        border-radius: 50px;
+        padding-left: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .search-bar:focus {
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        border-color: #198754;
+    }
+    .search-button {
+        border-radius: 0 50px 50px 0;
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .search-button:hover {
+        background-color: #0f5132;
+        border-color: #0f5132;
+    }
+    .search-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+    }
+    .filter-active {
+        background-color: rgba(25, 135, 84, 0.1);
+        border-radius: 0.375rem;
+        padding: 0.2rem 0.5rem;
+    }
     @media (max-width: 767.98px) {
         .filter-section {
             margin-bottom: 1.5rem;
@@ -107,19 +136,24 @@
         <div class="col-md-3 mb-4">
             <div class="filter-section p-3 mb-4">
                 <h5 class="section-heading">{% trans "Filter Products" %}</h5>
-                <form action="." method="get">
+                <form action="." method="get" id="filter-form">
+                    <!-- Preserve search term when filtering -->
+                    {% if request.GET.search_query %}
+                    <input type="hidden" name="search_query" value="{{ request.GET.search_query }}">
+                    {% endif %}
+                    
                     <!-- Category Filter -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-2">{% trans "Categories" %}</h6>
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-2 {% if not request.GET.category %}filter-active{% endif %}">
                             <input class="form-check-input" type="radio" name="category" id="category-all" value="" {% if not request.GET.category %}checked{% endif %}>
                             <label class="form-check-label" for="category-all">
                                 {% trans "All Categories" %}
                             </label>
                         </div>
                         {% for category in categories %}
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="category" id="category-{{ category.id }}" value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}checked{% endif %}>
+                        <div class="form-check mb-2 {% if request.GET.category == category.id|stringformat:"i" %}filter-active{% endif %}">
+                            <input class="form-check-input filter-category" type="radio" name="category" id="category-{{ category.id }}" value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}checked{% endif %}>
                             <label class="form-check-label" for="category-{{ category.id }}">
                                 {{ category.name }}
                             </label>
@@ -133,11 +167,11 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label for="min-price" class="form-label">{% trans "Min ₹" %}</label>
-                                <input type="number" class="form-control form-control-sm" id="min-price" name="min_price" value="{{ request.GET.min_price|default:'' }}" min="0">
+                                <input type="number" class="form-control form-control-sm filter-price" id="min-price" name="min_price" value="{{ request.GET.min_price|default:'' }}" min="0">
                             </div>
                             <div class="col-6">
                                 <label for="max-price" class="form-label">{% trans "Max ₹" %}</label>
-                                <input type="number" class="form-control form-control-sm" id="max-price" name="max_price" value="{{ request.GET.max_price|default:'' }}" min="0">
+                                <input type="number" class="form-control form-control-sm filter-price" id="max-price" name="max_price" value="{{ request.GET.max_price|default:'' }}" min="0">
                             </div>
                         </div>
                     </div>
@@ -145,8 +179,8 @@
                     <!-- Availability Filter -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-2">{% trans "Availability" %}</h6>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" name="in_stock" id="in-stock" value="1" {% if request.GET.in_stock %}checked{% endif %}>
+                        <div class="form-check mb-2 {% if request.GET.in_stock %}filter-active{% endif %}">
+                            <input class="form-check-input filter-stock" type="checkbox" name="in_stock" id="in-stock" value="1" {% if request.GET.in_stock %}checked{% endif %}>
                             <label class="form-check-label" for="in-stock">
                                 {% trans "In Stock Only" %}
                             </label>
@@ -156,7 +190,7 @@
                     <!-- Sort By -->
                     <div class="mb-4">
                         <h6 class="fw-bold mb-2">{% trans "Sort By" %}</h6>
-                        <select class="form-select form-select-sm" name="sort">
+                        <select class="form-select form-select-sm filter-sort" name="sort">
                             <option value="" {% if not request.GET.sort %}selected{% endif %}>{% trans "Default" %}</option>
                             <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>{% trans "Price: Low to High" %}</option>
                             <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>{% trans "Price: High to Low" %}</option>
@@ -167,33 +201,83 @@
                     
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success">{% trans "Apply Filters" %}</button>
-                        <div class="mb-3">
-                            <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-secondary">{% trans "Clear Filters" %}</a>
-                        </div>
+                        <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-secondary">{% trans "Clear Filters" %}</a>
                     </div>
                 </form>
             </div>
+            
+            <!-- Active Filters -->
+            {% if request.GET.category or request.GET.min_price or request.GET.max_price or request.GET.in_stock or request.GET.sort %}
+            <div class="filter-section p-3 mb-4">
+                <h5 class="section-heading">{% trans "Active Filters" %}</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if request.GET.category and current_category %}
+                    <span class="badge bg-success">
+                        {% trans "Category" %}: {{ current_category.name }}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Remove" onclick="removeFilter('category')"></button>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.min_price %}
+                    <span class="badge bg-success">
+                        {% trans "Min Price" %}: ₹{{ request.GET.min_price }}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Remove" onclick="removeFilter('min_price')"></button>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.max_price %}
+                    <span class="badge bg-success">
+                        {% trans "Max Price" %}: ₹{{ request.GET.max_price }}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Remove" onclick="removeFilter('max_price')"></button>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.in_stock %}
+                    <span class="badge bg-success">
+                        {% trans "In Stock Only" %}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Remove" onclick="removeFilter('in_stock')"></button>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.sort %}
+                    <span class="badge bg-success">
+                        {% trans "Sorted By" %}: 
+                        {% if request.GET.sort == 'price_asc' %}
+                            {% trans "Price: Low to High" %}
+                        {% elif request.GET.sort == 'price_desc' %}
+                            {% trans "Price: High to Low" %}
+                        {% elif request.GET.sort == 'newest' %}
+                            {% trans "Newest First" %}
+                        {% elif request.GET.sort == 'rating' %}
+                            {% trans "Highest Rated" %}
+                        {% endif %}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                aria-label="Remove" onclick="removeFilter('sort')"></button>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Farmer Spotlight -->
             <div class="filter-section p-3">
                 <h5 class="section-heading">{% trans "Featured Farmers" %}</h5>
                 {% for farmer in featured_farmers %}
                 <div class="d-flex align-items-center mb-3{% if not forloop.last %} border-bottom pb-3{% endif %}">
-                    {% if farmer.profile_picture %}
-                    <img src="{{ farmer.profile_picture.url }}" alt="{{ farmer.user.get_full_name }}" class="rounded-circle me-2" width="40" height="40">
+                    {% if farmer.profile_pic %}
+                    <img src="{{ farmer.profile_pic.url }}" alt="{{ farmer.get_full_name }}" class="rounded-circle me-2" width="40" height="40">
                     {% else %}
                     <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
                         <i class="bi bi-person text-secondary"></i>
                     </div>
                     {% endif %}
                     <div>
-                        <h6 class="mb-0 fw-bold">{{ farmer.user.get_full_name }}</h6>
-                        <div class="star-rating small">
-                            {% for i in "12345"|make_list %}
-                            <i class="bi bi-star-fill {% if forloop.counter > farmer.avg_rating %}inactive{% endif %}"></i>
-                            {% endfor %}
-                            <span class="text-muted ms-1">({{ farmer.review_count }})</span>
-                        </div>
+                        <h6 class="mb-0 fw-bold">{{ farmer.get_full_name|default:farmer.username }}</h6>
+                        <small class="text-muted">{{ farmer.products.count }} {% trans "products" %}</small>
                     </div>
                 </div>
                 {% empty %}
@@ -204,8 +288,42 @@
         
         <!-- Products Grid -->
         <div class="col-md-9">
+            <!-- Search Bar -->
+            <div class="search-container mb-4">
+                <form action="." method="get" class="d-flex align-items-center" id="search-form">
+                    <!-- Preserve filters when searching -->
+                    {% if request.GET.category %}<input type="hidden" name="category" value="{{ request.GET.category }}">{% endif %}
+                    {% if request.GET.min_price %}<input type="hidden" name="min_price" value="{{ request.GET.min_price }}">{% endif %}
+                    {% if request.GET.max_price %}<input type="hidden" name="max_price" value="{{ request.GET.max_price }}">{% endif %}
+                    {% if request.GET.in_stock %}<input type="hidden" name="in_stock" value="{{ request.GET.in_stock }}">{% endif %}
+                    {% if request.GET.sort %}<input type="hidden" name="sort" value="{{ request.GET.sort }}">{% endif %}
+                    
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            class="form-control search-bar" 
+                            placeholder="{% trans 'Search products by name, farmer...' %}" 
+                            name="search_query"
+                            value="{{ request.GET.search_query|default:'' }}"
+                            aria-label="Search products"
+                        >
+                        <button type="submit" class="btn btn-success search-button">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="h4 mb-0">{% trans "Farm Fresh Products" %}</h2>
+                <h2 class="h4 mb-0">
+                {% if request.GET.search_query %}
+                    {% trans "Search Results for" %}: "{{ request.GET.search_query }}"
+                {% elif request.GET.category and current_category %}
+                    {{ current_category.name }} {% trans "Products" %}
+                {% else %}
+                    {% trans "Farm Fresh Products" %}
+                {% endif %}
+                </h2>
                 <span class="text-muted">{% trans "Showing" %} {{ products|length }} {% trans "of" %} {{ paginator.count }} {% trans "products" %}</span>
             </div>
             
@@ -214,24 +332,28 @@
                 {% for product in products %}
                 <div class="col">
                     <div class="card product-card h-100 border-0 shadow-sm">
-                        <div class="position-relative">
-                            <span class="badge bg-primary category-badge">{{ product.category.name }}</span>
-                            <div class="product-img-container">
-                                {% if product.image %}
-                                <img src="{{ product.image.url }}" class="product-img" alt="{{ product.name }}">
-                                {% else %}
-                                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
-                                    <i class="bi bi-image text-secondary" style="font-size: 3rem;"></i>
+                        <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="text-decoration-none text-dark">
+                            <div class="position-relative">
+                                <span class="badge bg-primary category-badge">{{ product.category.name }}</span>
+                                <div class="product-img-container">
+                                    {% if product.image %}
+                                    <img src="{{ product.image.url }}" class="product-img" alt="{{ product.name }}">
+                                    {% else %}
+                                    <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                        <i class="bi bi-image text-secondary" style="font-size: 3rem;"></i>
+                                    </div>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
-                        </div>
+                        </a>
                         <div class="card-body d-flex flex-column">
-                            <h5 class="product-title mb-2">{{ product.name }}</h5>
+                            <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="text-decoration-none text-dark">
+                                <h5 class="product-title mb-2">{{ product.name }}</h5>
+                            </a>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
                                     <span class="product-price mb-0">₹{{ product.price }}</span>
-                                    <span class="text-muted small">/ {{ product.unit }}</span>
+                                    <span class="text-muted small">/ {{ product.get_unit_display }}</span>
                                 </div>
                                 {% if product.quantity_available > 10 %}
                                 <span class="badge bg-success stock-badge">{% trans "In Stock" %}</span>
@@ -241,33 +363,31 @@
                                 <span class="badge bg-danger stock-badge">{% trans "Out of Stock" %}</span>
                                 {% endif %}
                             </div>
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="star-rating me-2">
-                                    {% for i in "12345"|make_list %}
-                                    <i class="bi bi-star-fill {% if forloop.counter > product.avg_rating %}inactive{% endif %}"></i>
-                                    {% endfor %}
-                                </div>
-                                <span class="text-muted small">({{ product.review_count }})</span>
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-person"></i> {{ product.farmer.get_full_name|default:product.farmer.username }}
                             </div>
-                            <p class="card-text text-muted small mb-3">{{ product.description|truncatechars:90 }}</p>
-                            <div class="mt-auto d-grid">
-                                {% if product.quantity_available > 0 %}
-                                <form method="post" action="{% url 'farm_core:add_to_cart' %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="product_id" value="{{ product.id }}">
-                                    <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-success add-to-cart-btn">
-                                        <i class="bi bi-cart-plus me-1"></i> {% trans "Add to Cart" %}
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i> {% trans "View" %}
+                                    </a>
+                                    {% if product.quantity_available > 0 %}
+                                    <form action="{% url 'farm_core:add_to_cart' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-cart-plus"></i> {% trans "Add to Cart" %}
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        <i class="bi bi-cart-plus"></i> {% trans "Out of Stock" %}
                                     </button>
-                                </form>
-                                {% else %}
-                                <button type="button" class="btn btn-secondary" disabled>
-                                    <i class="bi bi-cart-x me-1"></i> {% trans "Out of Stock" %}
-                                </button>
-                                {% endif %}
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="stretched-link"></a>
                     </div>
                 </div>
                 {% endfor %}
@@ -275,23 +395,23 @@
             
             <!-- Pagination -->
             {% if is_paginated %}
-            <nav aria-label="Product pagination" class="mt-4">
+            <nav aria-label="Page navigation" class="mt-5">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'First' %}">
-                            <i class="bi bi-chevron-double-left"></i>
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Previous' %}">
-                            <i class="bi bi-chevron-left"></i>
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
                     {% endif %}
                     
-                    {% for num in paginator.page_range %}
-                        {% if page_obj.number == num %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                         <li class="page-item">
@@ -302,13 +422,13 @@
                     
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Next' %}">
-                            <i class="bi bi-chevron-right"></i>
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Last' %}">
-                            <i class="bi bi-chevron-double-right"></i>
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
                     {% endif %}
@@ -318,13 +438,14 @@
             
             {% else %}
             <div class="text-center py-5">
-                <i class="bi bi-basket display-1 text-muted mb-3"></i>
+                <div class="mb-4">
+                    <i class="bi bi-basket display-3 text-muted"></i>
+                </div>
                 <h3>{% trans "No products found" %}</h3>
-                {% if request.GET %}
-                <p class="text-muted">{% trans "Try changing your search criteria or" %} <a href="{% url 'farm_core:product_list' %}">{% trans "clear all filters" %}</a>.</p>
-                {% else %}
-                <p class="text-muted">{% trans "There are currently no products available. Please check back later." %}</p>
-                {% endif %}
+                <p class="text-muted">{% trans "Try adjusting your search or filter criteria." %}</p>
+                <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-primary mt-3">
+                    <i class="bi bi-arrow-clockwise me-1"></i> {% trans "Reset filters" %}
+                </a>
             </div>
             {% endif %}
         </div>
@@ -335,22 +456,60 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add to cart button effect
-        var addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
-        addToCartButtons.forEach(function(button) {
-            button.addEventListener('click', function() {
-                var originalText = this.innerHTML;
-                this.innerHTML = '<i class="bi bi-check2"></i> Added to Cart';
-                this.classList.add('btn-light');
-                this.classList.remove('btn-success');
-                
-                setTimeout(function() {
-                    button.innerHTML = originalText;
-                    button.classList.remove('btn-light');
-                    button.classList.add('btn-success');
-                }, 1500);
+        // Auto-submit form on filter change (optional for quick filtering)
+        const autoSubmitElements = document.querySelectorAll('.filter-category, .filter-stock, .filter-sort');
+        autoSubmitElements.forEach(element => {
+            element.addEventListener('change', function() {
+                document.getElementById('filter-form').submit();
             });
         });
+        
+        // Handle price range filtering - debounce for better performance
+        let priceFilterTimeout;
+        const priceElements = document.querySelectorAll('.filter-price');
+        priceElements.forEach(element => {
+            element.addEventListener('input', function() {
+                clearTimeout(priceFilterTimeout);
+                priceFilterTimeout = setTimeout(() => {
+                    const minPrice = document.getElementById('min-price').value;
+                    const maxPrice = document.getElementById('max-price').value;
+                    
+                    // Only submit if both fields are empty or if min < max
+                    if ((minPrice === '' && maxPrice === '') || 
+                        (minPrice === '') || 
+                        (maxPrice === '') || 
+                        (parseInt(minPrice) < parseInt(maxPrice))) {
+                        document.getElementById('filter-form').submit();
+                    }
+                }, 800);
+            });
+        });
+        
+        // Add to cart button effect
+        var addToCartButtons = document.querySelectorAll('.btn-success');
+        addToCartButtons.forEach(function(button) {
+            if (button.type === 'submit' && button.innerHTML.includes('Add to Cart')) {
+                button.addEventListener('click', function() {
+                    var originalText = this.innerHTML;
+                    this.innerHTML = '<i class="bi bi-check2"></i> Adding...';
+                    this.disabled = true;
+                });
+            }
+        });
     });
+    
+    // Remove filter function
+    function removeFilter(filterName) {
+        // Create a new URL object
+        const url = new URL(window.location.href);
+        // Get the current search parameters
+        const params = new URLSearchParams(url.search);
+        // Remove the selected parameter
+        params.delete(filterName);
+        // Update the URL's search parameters
+        url.search = params.toString();
+        // Navigate to the new URL
+        window.location.href = url.toString();
+    }
 </script>
 {% endblock %} 

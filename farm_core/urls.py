@@ -50,6 +50,9 @@ urlpatterns = [
     path('orders/', views.OrderListView.as_view(), name='order_list'),
     path('orders/<int:pk>/', views.OrderDetailView.as_view(), name='order_detail'),
     
+    # Payment
+    path('payment/<str:order_ids>/', views.PaymentGatewayView.as_view(), name='payment_gateway'),
+    
     # User profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/edit/', views.ProfileEditView.as_view(), name='edit_profile'),

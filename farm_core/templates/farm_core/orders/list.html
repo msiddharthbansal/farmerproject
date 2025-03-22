@@ -1,0 +1,109 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "My Orders" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-card {
+        transition: transform 0.2s;
+    }
+    .order-card:hover {
+        transform: translateY(-5px);
+    }
+    .order-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "My Orders" %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="h2 mb-0">{% trans "My Orders" %}</h1>
+        <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-success">
+            <i class="bi bi-basket me-1"></i>{% trans "Continue Shopping" %}
+        </a>
+    </div>
+
+    {% if orders %}
+        <div class="row g-4">
+            {% for order in orders %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm order-card h-100 position-relative">
+                        {% if order.status == 'pending' %}
+                            <span class="order-status badge bg-warning text-dark">{% trans "Pending" %}</span>
+                        {% elif order.status == 'processing' %}
+                            <span class="order-status badge bg-info">{% trans "Processing" %}</span>
+                        {% elif order.status == 'shipped' %}
+                            <span class="order-status badge bg-primary">{% trans "Shipped" %}</span>
+                        {% elif order.status == 'delivered' %}
+                            <span class="order-status badge bg-success">{% trans "Delivered" %}</span>
+                        {% elif order.status == 'cancelled' %}
+                            <span class="order-status badge bg-danger">{% trans "Cancelled" %}</span>
+                        {% endif %}
+
+                        <div class="card-body">
+                            <div class="d-flex mb-3">
+                                {% if order.product.image %}
+                                    <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}" class="me-3" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
+                                {% else %}
+                                    <div class="me-3 d-flex align-items-center justify-content-center bg-light" style="width: 70px; height: 70px; border-radius: 8px;">
+                                        <i class="bi bi-image text-secondary fs-3"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h5 class="card-title mb-1">{{ order.product.name }}</h5>
+                                    <p class="card-text mb-0 text-muted small">
+                                        <i class="bi bi-person me-1"></i>{{ order.product.farmer.get_full_name|default:order.product.farmer.username }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between text-muted small mb-1">
+                                    <span>{% trans "Order Date" %}</span>
+                                    <span>{{ order.order_date|date:"M d, Y" }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mb-1">
+                                    <span>{% trans "Quantity" %}</span>
+                                    <span>{{ order.quantity }} {{ order.product.get_unit_display }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <strong>{% trans "Total Price" %}</strong>
+                                    <strong>₹{{ order.total_price }}</strong>
+                                </div>
+                            </div>
+
+                            <a href="{% url 'farm_core:order_detail' pk=order.id %}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="bi bi-eye me-1"></i>{% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-bag-x display-1 text-muted"></i>
+            </div>
+            <h3>{% trans "No orders found" %}</h3>
+            <p class="text-muted">{% trans "You haven't placed any orders yet." %}</p>
+            <a href="{% url 'farm_core:product_list' %}" class="btn btn-success mt-3">
+                <i class="bi bi-basket me-1"></i>{% trans "Browse Products" %}
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -8,7 +8,7 @@ from django.db.models import Sum, Count
 from django.contrib.auth import logout as auth_logout
 from django.utils import timezone
 from django.http import HttpResponse
-from .models import User, Product, ProductCategory, Order
+from .models import User, Product, ProductCategory, Order, CartItem, PaymentTransaction
 from .forms import UserSignupForm, ProductForm, OrderForm, UserProfileForm
 from django.utils.safestring import mark_safe
 
@@ -420,6 +420,17 @@ class ProductListView(ListView):
     def get_queryset(self):
         queryset = Product.objects.all().order_by('-created_at')
         
+        # Search functionality
+        search_query = self.request.GET.get('search_query')
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |  # Search by product name
+                Q(farmer__first_name__icontains=search_query) |  # Search by farmer first name
+                Q(farmer__last_name__icontains=search_query) |  # Search by farmer last name
+                Q(farmer__username__icontains=search_query)  # Search by farmer username
+            )
+        
         # Apply filters
         category_id = self.request.GET.get('category')
         if category_id:
@@ -454,6 +465,15 @@ class ProductListView(ListView):
         context = super().get_context_data(**kwargs)
         context['categories'] = ProductCategory.objects.all()
         context['featured_farmers'] = User.objects.filter(user_type='farmer').order_by('-date_joined')[:3]
+        
+        # Get current category for display
+        category_id = self.request.GET.get('category')
+        if category_id:
+            try:
+                context['current_category'] = ProductCategory.objects.get(id=category_id)
+            except ProductCategory.DoesNotExist:
+                pass
+                
         return context
 
 class ProductDetailView(DetailView):
@@ -469,7 +489,44 @@ class CategoryProductListView(ListView):
     
     def get_queryset(self):
         category_id = self.kwargs.get('category_id')
-        return Product.objects.filter(category_id=category_id)
+        queryset = Product.objects.filter(category_id=category_id)
+        
+        # Search functionality
+        search_query = self.request.GET.get('search_query')
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |  # Search by product name
+                Q(farmer__first_name__icontains=search_query) |  # Search by farmer first name
+                Q(farmer__last_name__icontains=search_query) |  # Search by farmer last name
+                Q(farmer__username__icontains=search_query)  # Search by farmer username
+            )
+            
+        # Apply additional filters
+        min_price = self.request.GET.get('min_price')
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+            
+        max_price = self.request.GET.get('max_price')
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+            
+        in_stock = self.request.GET.get('in_stock')
+        if in_stock:
+            queryset = queryset.filter(quantity_available__gt=0)
+            
+        # Apply sorting
+        sort = self.request.GET.get('sort')
+        if sort == 'price_asc':
+            queryset = queryset.order_by('price')
+        elif sort == 'price_desc':
+            queryset = queryset.order_by('-price')
+        elif sort == 'newest':
+            queryset = queryset.order_by('-created_at')
+        elif sort == 'rating':
+            queryset = queryset.order_by('-avg_rating')
+        
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -479,111 +536,109 @@ class CategoryProductListView(ListView):
         return context
 
 # Shopping cart views
-class CartView(TemplateView):
+class CartView(LoginRequiredMixin, TemplateView):
     template_name = 'farm_core/cart/cart.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cart = self.request.session.get('cart', {})
-        cart_items = []
-        total = 0
         
-        for product_id, quantity in cart.items():
-            try:
-                product = Product.objects.get(id=product_id)
-                item_total = product.price * int(quantity)
-                total += item_total
-                cart_items.append({
-                    'id': product_id,
-                    'product': product,
-                    'quantity': quantity,
-                    'subtotal': item_total
-                })
-            except Product.DoesNotExist:
-                pass
+        # Get cart items from the database model instead of session
+        cart_items = CartItem.objects.filter(user=self.request.user).select_related('product')
+        total = sum(item.subtotal for item in cart_items)
         
         context['cart_items'] = cart_items
         context['total'] = total
-        context['item_count'] = sum(int(quantity) for quantity in cart.values())
+        context['item_count'] = cart_items.count()
         
         return context
 
-class AddToCartView(View):
+class AddToCartView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         product_id = request.POST.get('product_id')
         quantity = int(request.POST.get('quantity', 1))
         
-        try:
-            product = Product.objects.get(id=product_id)
-            if product.quantity_available < quantity:
-                messages.error(request, _('Not enough stock available.'))
-                return redirect('farm_core:product_detail', pk=product_id)
-            
-            # Initialize or get the cart from session
-            cart = request.session.get('cart', {})
-            
-            # Add or update item in cart
-            if product_id in cart:
-                cart[product_id] += quantity
-            else:
-                cart[product_id] = quantity
-            
-            request.session['cart'] = cart
-            messages.success(request, _('Product added to cart.'))
-            
-            # Redirect to referer or products list if referer is not available
-            referer = request.META.get('HTTP_REFERER')
-            if referer:
-                return redirect(referer)
-            return redirect('farm_core:product_list')
-            
-        except Product.DoesNotExist:
-            messages.error(request, _('Product not found.'))
-            return redirect('farm_core:product_list')
-
-class RemoveFromCartView(View):
-    def post(self, request, item_id, *args, **kwargs):
-        cart = request.session.get('cart', {})
-        if str(item_id) in cart:
-            del cart[str(item_id)]
-            request.session['cart'] = cart
-            messages.success(request, _('Item removed from cart.'))
-        
-        referer = request.META.get('HTTP_REFERER')
-        if referer and 'cart' in referer:
-            return redirect('farm_core:cart')
-        return redirect('farm_core:product_list')
-
-class UpdateCartView(View):
-    def post(self, request, *args, **kwargs):
-        product_ids = request.POST.getlist('product_id')
-        quantities = request.POST.getlist('quantity')
-        
-        cart = request.session.get('cart', {})
-        
-        for product_id, quantity in zip(product_ids, quantities):
+        if product_id:
             try:
-                qty = int(quantity)
-                if qty > 0:
-                    product = Product.objects.get(id=product_id)
-                    if product.quantity_available >= qty:
-                        cart[str(product_id)] = qty
-                    else:
-                        messages.error(
-                            request, 
-                            _('Only %(available)s units of %(product)s available.') % {
-                                'available': product.quantity_available,
-                                'product': product.name
-                            }
-                        )
-                else:
-                    if str(product_id) in cart:
-                        del cart[str(product_id)]
-            except (ValueError, Product.DoesNotExist):
-                pass
+                product = Product.objects.get(id=product_id)
+                
+                # Check if the product is available
+                if not product.is_available or product.quantity_available < quantity:
+                    messages.error(request, _('Sorry, this product is not available in the requested quantity.'))
+                    return redirect('farm_core:product_detail', pk=product_id)
+                
+                # Check if the product is already in the cart
+                cart_item, created = CartItem.objects.get_or_create(
+                    user=request.user,
+                    product=product,
+                    defaults={'quantity': quantity}
+                )
+                
+                # If the product already exists in the cart, update the quantity
+                if not created:
+                    cart_item.quantity += quantity
+                    # Check if quantity exceeds available stock
+                    if cart_item.quantity > product.quantity_available:
+                        cart_item.quantity = product.quantity_available
+                        messages.warning(request, _('We have adjusted the quantity to the maximum available stock.'))
+                    cart_item.save()
+                
+                messages.success(request, _('Product added to your cart successfully.'))
+                
+            except Product.DoesNotExist:
+                messages.error(request, _('Product not found.'))
+            except Exception as e:
+                messages.error(request, _('An error occurred while adding the product to your cart.'))
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error in AddToCartView: {str(e)}")
         
-        request.session['cart'] = cart
-        messages.success(request, _('Cart updated successfully.'))
+        return redirect('farm_core:cart')
+
+class RemoveFromCartView(LoginRequiredMixin, View):
+    def post(self, request, item_id, *args, **kwargs):
+        try:
+            cart_item = CartItem.objects.get(id=item_id, user=request.user)
+            cart_item.delete()
+            messages.success(request, _('Product removed from your cart.'))
+        except CartItem.DoesNotExist:
+            messages.error(request, _('Item not found in your cart.'))
+        except Exception as e:
+            messages.error(request, _('An error occurred while removing the product from your cart.'))
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in RemoveFromCartView: {str(e)}")
+        
+        return redirect('farm_core:cart')
+
+class UpdateCartView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        try:
+            item_id = request.POST.get('item_id')
+            quantity = int(request.POST.get('quantity', 1))
+            
+            if quantity <= 0:
+                return redirect('farm_core:remove_from_cart', item_id=item_id)
+            
+            cart_item = CartItem.objects.get(id=item_id, user=request.user)
+            
+            # Check if requested quantity exceeds available quantity
+            if quantity > cart_item.product.quantity_available:
+                quantity = cart_item.product.quantity_available
+                messages.warning(request, _('We have adjusted the quantity to the maximum available stock.'))
+            
+            cart_item.quantity = quantity
+            cart_item.save()
+            
+            messages.success(request, _('Cart updated successfully.'))
+            
+        except CartItem.DoesNotExist:
+            messages.error(request, _('Item not found in your cart.'))
+        except Exception as e:
+            messages.error(request, _('An error occurred while updating your cart.'))
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in UpdateCartView: {str(e)}")
+        
         return redirect('farm_core:cart')
 
 # Order management
@@ -811,88 +866,52 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cart = self.request.session.get('cart', {})
         
-        if not cart:
+        # Get cart items from the database model
+        cart_items = CartItem.objects.filter(user=self.request.user).select_related('product')
+        
+        if not cart_items:
             messages.warning(self.request, _('Your cart is empty. Add some products before checkout.'))
-            return context  # Just return the context, redirect will happen in get()
+            return context
         
-        cart_items = []
-        total = 0
-        
-        for product_id, quantity in cart.items():
-            try:
-                product = Product.objects.get(id=product_id)
-                item_total = product.price * int(quantity)
-                total += item_total
-                cart_items.append({
-                    'id': product_id,
-                    'product': product,
-                    'quantity': quantity,
-                    'subtotal': item_total
-                })
-            except Product.DoesNotExist:
-                pass
+        total = sum(item.subtotal for item in cart_items)
         
         context['cart_items'] = cart_items
         context['total'] = total
-        context['item_count'] = sum(int(quantity) for quantity in cart.values())
+        context['item_count'] = cart_items.count()
         
         return context
     
     def get(self, request, *args, **kwargs):
-        cart = request.session.get('cart', {})
-        if not cart:
+        cart_items = CartItem.objects.filter(user=request.user)
+        if not cart_items.exists():
             messages.warning(request, _('Your cart is empty. Add some products before checkout.'))
             return redirect('farm_core:product_list')
         return super().get(request, *args, **kwargs)
     
     def post(self, request, *args, **kwargs):
-        cart = request.session.get('cart', {})
+        cart_items = CartItem.objects.filter(user=request.user).select_related('product')
         
-        if not cart:
+        if not cart_items.exists():
             messages.warning(request, _('Your cart is empty. Add some products before checkout.'))
             return redirect('farm_core:product_list')
         
-        # Check for migration-dependent fields
         try:
-            from django.db import connection
-            cursor = connection.cursor()
-            cursor.execute("PRAGMA table_info(farm_core_order)")
-            has_new_fields = any(row[1] == 'cancellation_reason' for row in cursor.fetchall())
+            # Process the orders
+            orders = []
+            payment_method = request.POST.get('payment_method', 'cod')
+            address = request.POST.get('address', '')
+            address2 = request.POST.get('address2', '')
+            city = request.POST.get('city', '')
+            state = request.POST.get('state', '')
+            zip_code = request.POST.get('zip', '')
+            shipping_address = f"{address}\n{address2}\n{city}, {state} {zip_code}"
             
-            if not has_new_fields:
-                messages.warning(request, _('Database needs to be updated. Please run the migrations at /run-migrations/ before checkout.'))
-                return redirect('farm_core:cart')
-        except Exception as e:
-            messages.error(request, _('There was an error checking the database. Please try again later.'))
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error checking database in CheckoutView: {str(e)}")
-            return redirect('farm_core:cart')
-        
-        # Process the order here (create Order objects)
-        for product_id, quantity in cart.items():
-            try:
-                product = Product.objects.get(id=product_id)
-                if product.quantity_available >= int(quantity):
-                    # Calculate total price for this order
-                    total_price = product.price * int(quantity)
-                    
-                    # Create the order
-                    order = Order.objects.create(
-                        product=product,
-                        consumer=request.user,
-                        quantity=quantity,
-                        status='pending',  # Use the field name 'status', not 'order_status'
-                        total_price=total_price,
-                        shipping_address=request.POST.get('address', 'No address provided')
-                    )
-                    
-                    # Update product quantity
-                    product.quantity_available -= int(quantity)
-                    product.save()
-                else:
+            for cart_item in cart_items:
+                product = cart_item.product
+                
+                # Check if product is still available
+                if product.quantity_available < cart_item.quantity:
                     messages.error(
                         request, 
                         _('Sorry, %(product)s is out of stock or has insufficient quantity.') % {
@@ -900,19 +919,49 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
                         }
                     )
                     return redirect('farm_core:cart')
-            except Product.DoesNotExist:
-                pass
-            except Exception as e:
-                messages.error(request, _('Error creating order. Please try again later.'))
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error creating order in CheckoutView: {str(e)}")
-                return redirect('farm_core:cart')
-        
-        # Clear the cart after successful checkout
-        request.session['cart'] = {}
-        messages.success(request, _('Your order has been placed successfully.'))
-        return redirect('farm_core:order_list')
+                
+                # Create the order
+                total_price = product.price * cart_item.quantity
+                order = Order.objects.create(
+                    product=product,
+                    consumer=request.user,
+                    quantity=cart_item.quantity,
+                    status='pending',
+                    total_price=total_price,
+                    shipping_address=shipping_address
+                )
+                orders.append(order)
+                
+                # Create payment transaction
+                PaymentTransaction.objects.create(
+                    order=order,
+                    user=request.user,
+                    amount=total_price,
+                    payment_method=payment_method,
+                    payment_status='pending'
+                )
+                
+                # Update product quantity
+                product.quantity_available -= cart_item.quantity
+                product.save()
+            
+            # Clear the user's cart
+            cart_items.delete()
+            
+            # Redirect to payment page if needed
+            if payment_method == 'cod':
+                messages.success(request, _('Your order has been placed successfully! You will pay on delivery.'))
+                return redirect('farm_core:order_list')
+            else:
+                # For other payment methods, redirect to payment gateway
+                return redirect('farm_core:payment_gateway', order_ids=','.join(str(order.id) for order in orders))
+            
+        except Exception as e:
+            messages.error(request, _('Error creating order. Please try again later.'))
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating order in CheckoutView: {str(e)}")
+            return redirect('farm_core:cart')
 
 # Custom logout view
 def logout_view(request):
@@ -920,3 +969,85 @@ def logout_view(request):
     auth_logout(request)
     messages.success(request, _('You have been successfully logged out.'))
     return redirect('farm_core:home')
+
+# Payment Processing
+class PaymentGatewayView(LoginRequiredMixin, TemplateView):
+    template_name = 'farm_core/payment/gateway.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        order_ids = self.kwargs.get('order_ids', '').split(',')
+        
+        try:
+            # Get orders and associated payment transactions
+            orders = Order.objects.filter(id__in=order_ids, consumer=self.request.user)
+            payment_transactions = PaymentTransaction.objects.filter(order__in=orders)
+            
+            # Calculate total amount
+            total_amount = sum(transaction.amount for transaction in payment_transactions)
+            
+            context['orders'] = orders
+            context['payment_transactions'] = payment_transactions
+            context['total_amount'] = total_amount
+            context['payment_reference'] = f"FARM-{int(timezone.now().timestamp())}"
+            
+            # Get payment method from the first transaction (should be the same for all)
+            if payment_transactions.exists():
+                context['payment_method'] = payment_transactions.first().payment_method
+            else:
+                context['payment_method'] = 'cod'
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in PaymentGatewayView: {str(e)}")
+            messages.error(self.request, _('An error occurred while loading payment information.'))
+            context['error'] = True
+            
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        order_ids = self.kwargs.get('order_ids', '').split(',')
+        payment_method = request.POST.get('payment_method')
+        card_number = request.POST.get('card_number', '').replace(' ', '')
+        expiry_date = request.POST.get('expiry_date', '')
+        cvv = request.POST.get('cvv', '')
+        cardholder_name = request.POST.get('cardholder_name', '')
+        
+        # Simple validation (in a real app, you'd use a payment processor API)
+        if payment_method == 'card':
+            if not (card_number and expiry_date and cvv and cardholder_name):
+                messages.error(request, _('Please fill in all card details.'))
+                return redirect('farm_core:payment_gateway', order_ids=','.join(order_ids))
+            
+            if not card_number.isdigit() or len(card_number) < 13:
+                messages.error(request, _('Invalid card number.'))
+                return redirect('farm_core:payment_gateway', order_ids=','.join(order_ids))
+        
+        try:
+            # Update payment transactions
+            payment_transactions = PaymentTransaction.objects.filter(
+                order_id__in=order_ids,
+                user=request.user
+            )
+            
+            # In a real app, this is where you'd integrate with a payment gateway API
+            # Here we're just simulating a successful payment
+            transaction_id = f"TXN-{int(timezone.now().timestamp())}"
+            
+            for transaction in payment_transactions:
+                transaction.payment_method = payment_method
+                transaction.transaction_id = transaction_id
+                transaction.payment_status = 'completed'  # Assuming payment is always successful
+                transaction.gateway_response = "Payment processed successfully"
+                transaction.save()
+            
+            messages.success(request, _('Payment processed successfully. Thank you for your order!'))
+            return redirect('farm_core:order_list')
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error processing payment: {str(e)}")
+            messages.error(request, _('An error occurred while processing your payment. Please try again.'))
+            return redirect('farm_core:payment_gateway', order_ids=','.join(order_ids))

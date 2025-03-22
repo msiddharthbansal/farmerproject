@@ -100,3 +100,59 @@ class Order(models.Model):
         if not self.total_price:
             self.total_price = self.product.price * self.quantity
         super().save(*args, **kwargs)
+
+
+class CartItem(models.Model):
+    """
+    Model to store cart items for users
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('user', 'product')
+        ordering = ['-added_at']
+    
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name} in {self.user.username}'s cart"
+    
+    @property
+    def subtotal(self):
+        return self.product.price * self.quantity
+
+
+class PaymentTransaction(models.Model):
+    """
+    Model to store payment transaction information
+    """
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    )
+    
+    PAYMENT_METHOD_CHOICES = (
+        ('cod', 'Cash on Delivery'),
+        ('upi', 'UPI'),
+        ('card', 'Credit/Debit Card'),
+        ('netbanking', 'Net Banking'),
+        ('wallet', 'Wallet'),
+    )
+    
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_transactions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_transactions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    gateway_response = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Payment #{self.id} - {self.order.id} - {self.payment_status}"
