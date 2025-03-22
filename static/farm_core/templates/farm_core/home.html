@@ -1,0 +1,117 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "FarmConnect - Farm Fresh Products Direct to Consumers" %}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-success text-white p-5 rounded-3 mb-5">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">{% trans "Farm Fresh Products Direct to Your Door" %}</h1>
+                <p class="fs-5 mb-4">{% trans "Connect directly with local farmers and get the freshest produce at the best prices. Support local agriculture and enjoy farm-fresh quality." %}</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="{% url 'farm_core:product_list' %}" class="btn btn-light btn-lg px-4 me-md-2">{% trans "Explore Products" %}</a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'farm_core:signup' %}" class="btn btn-outline-light btn-lg px-4">{% trans "Join Now" %}</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <img src="{% static 'images/hero-image.jpg' %}" alt="Farm Fresh" class="img-fluid rounded" onerror="this.src='https://placehold.co/600x400?text=Farm+Fresh'">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Categories -->
+<section class="mb-5">
+    <h2 class="text-center mb-4">{% trans "Product Categories" %}</h2>
+    <div class="row g-4">
+        {% for category in categories %}
+        <div class="col-md-4">
+            <div class="card h-100">
+                <img src="{% static 'images/categories/'|add:category.name|add:'.jpg' %}" class="card-img-top" alt="{{ category.name }}" onerror="this.src='https://placehold.co/600x400?text={{ category.name }}'">
+                <div class="card-body">
+                    <h5 class="card-title">{{ category.name }}</h5>
+                    <p class="card-text">{{ category.description|truncatechars:100 }}</p>
+                    <a href="{% url 'farm_core:category_products' category_id=category.id %}" class="btn btn-outline-success">{% trans "Browse" %}</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>{% trans "No categories available yet." %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Latest Products -->
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{% trans "Latest Products" %}</h2>
+        <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-success">{% trans "View All" %}</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for product in products %}
+        <div class="col">
+            <div class="card h-100">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% else %}
+                <img src="https://placehold.co/600x400?text=Product" class="card-img-top" alt="{{ product.name }}">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description|truncatechars:100 }}</p>
+                    <p class="text-success fw-bold">₹{{ product.price }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">{% trans "Farmer:" %} {{ product.farmer.first_name }}</small>
+                        <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="btn btn-sm btn-success">{% trans "View Details" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>{% trans "No products available yet." %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Benefits Section -->
+<section class="my-5 py-5 bg-light rounded">
+    <div class="container">
+        <h2 class="text-center mb-5">{% trans "Why Choose FarmConnect?" %}</h2>
+        <div class="row g-4">
+            <div class="col-md-4 text-center">
+                <div class="mb-3">
+                    <img src="{% static 'images/fresh-icon.png' %}" alt="Fresh" class="img-fluid" width="80" onerror="this.src='https://placehold.co/80?text=Fresh'">
+                </div>
+                <h4>{% trans "Farm Fresh" %}</h4>
+                <p>{% trans "Get produce directly from farms, ensuring maximum freshness and quality." %}</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="mb-3">
+                    <img src="{% static 'images/support-icon.png' %}" alt="Support" class="img-fluid" width="80" onerror="this.src='https://placehold.co/80?text=Support'">
+                </div>
+                <h4>{% trans "Support Local Farmers" %}</h4>
+                <p>{% trans "Help local farmers thrive by buying directly and cutting out middlemen." %}</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="mb-3">
+                    <img src="{% static 'images/price-icon.png' %}" alt="Price" class="img-fluid" width="80" onerror="this.src='https://placehold.co/80?text=Price'">
+                </div>
+                <h4>{% trans "Fair Prices" %}</h4>
+                <p>{% trans "Get better prices as you buy directly from the source without markups." %}</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} 

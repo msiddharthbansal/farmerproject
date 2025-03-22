@@ -1,0 +1,278 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Checkout" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-summary {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+    }
+    .checkout-product-img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    .payment-option {
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+    .payment-option:hover {
+        border-color: #198754;
+    }
+    .payment-option.selected {
+        border-color: #198754;
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+    .payment-option .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:cart' %}">{% trans "Shopping Cart" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Checkout" %}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h2 mb-4">{% trans "Checkout" %}</h1>
+
+    <form method="post" action="{% url 'farm_core:checkout' %}">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Billing and Shipping Information -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">{% trans "Shipping Information" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label">{% trans "First Name" %} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="firstName" name="first_name" value="{{ request.user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label">{% trans "Last Name" %} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="lastName" name="last_name" value="{{ request.user.last_name }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="address" class="form-label">{% trans "Address Line 1" %} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="address" name="address" placeholder="1234 Main St" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="address2" class="form-label">{% trans "Address Line 2" %}</label>
+                                <input type="text" class="form-control" id="address2" name="address2" placeholder="Apartment, studio, or floor">
+                            </div>
+                            <div class="col-md-5">
+                                <label for="city" class="form-label">{% trans "City" %} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="city" name="city" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="state" class="form-label">{% trans "State" %} <span class="text-danger">*</span></label>
+                                <select class="form-select" id="state" name="state" required>
+                                    <option value="">{% trans "Choose..." %}</option>
+                                    <option value="AP">Andhra Pradesh</option>
+                                    <option value="AR">Arunachal Pradesh</option>
+                                    <option value="AS">Assam</option>
+                                    <option value="BR">Bihar</option>
+                                    <option value="CT">Chhattisgarh</option>
+                                    <option value="GA">Goa</option>
+                                    <option value="GJ">Gujarat</option>
+                                    <option value="HR">Haryana</option>
+                                    <option value="HP">Himachal Pradesh</option>
+                                    <option value="JK">Jammu and Kashmir</option>
+                                    <option value="JH">Jharkhand</option>
+                                    <option value="KA">Karnataka</option>
+                                    <option value="KL">Kerala</option>
+                                    <option value="MP">Madhya Pradesh</option>
+                                    <option value="MH">Maharashtra</option>
+                                    <option value="MN">Manipur</option>
+                                    <option value="ML">Meghalaya</option>
+                                    <option value="MZ">Mizoram</option>
+                                    <option value="NL">Nagaland</option>
+                                    <option value="OR">Odisha</option>
+                                    <option value="PB">Punjab</option>
+                                    <option value="RJ">Rajasthan</option>
+                                    <option value="SK">Sikkim</option>
+                                    <option value="TN">Tamil Nadu</option>
+                                    <option value="TG">Telangana</option>
+                                    <option value="TR">Tripura</option>
+                                    <option value="UT">Uttarakhand</option>
+                                    <option value="UP">Uttar Pradesh</option>
+                                    <option value="WB">West Bengal</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="zip" class="form-label">{% trans "Zip Code" %} <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="zip" name="zip" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="phone" class="form-label">{% trans "Phone Number" %} <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="e.g., 9845012345" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">{% trans "Payment Method" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Cash on Delivery -->
+                        <div class="payment-option selected">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cashOnDelivery" value="cod" checked>
+                                <label class="form-check-label d-flex justify-content-between align-items-center" for="cashOnDelivery">
+                                    <div>
+                                        <strong>{% trans "Cash on Delivery" %}</strong>
+                                        <p class="text-muted mb-0 small">{% trans "Pay when your order is delivered" %}</p>
+                                    </div>
+                                    <i class="bi bi-cash-coin fs-3 text-success"></i>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- UPI -->
+                        <div class="payment-option">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="upiPayment" value="upi">
+                                <label class="form-check-label d-flex justify-content-between align-items-center" for="upiPayment">
+                                    <div>
+                                        <strong>{% trans "UPI Payment" %}</strong>
+                                        <p class="text-muted mb-0 small">{% trans "Pay using UPI apps like Google Pay, PhonePe, Paytm" %}</p>
+                                    </div>
+                                    <i class="bi bi-phone fs-3 text-primary"></i>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Credit/Debit Card -->
+                        <div class="payment-option">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cardPayment" value="card">
+                                <label class="form-check-label d-flex justify-content-between align-items-center" for="cardPayment">
+                                    <div>
+                                        <strong>{% trans "Credit/Debit Card" %}</strong>
+                                        <p class="text-muted mb-0 small">{% trans "Pay securely with your card" %}</p>
+                                    </div>
+                                    <i class="bi bi-credit-card fs-3 text-info"></i>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm order-summary sticky-lg-top" style="top: 2rem; z-index: 1;">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">{% trans "Order Summary" %} ({{ item_count }} {% trans "items" %})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {% for item in cart_items %}
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="checkout-product-img me-2">
+                                    {% else %}
+                                    <div class="checkout-product-img bg-light d-flex align-items-center justify-content-center me-2">
+                                        <i class="bi bi-image text-secondary"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="mb-0 small">{{ item.product.name }} <span class="text-muted">x {{ item.quantity }}</span></p>
+                                        <small class="text-muted">{{ item.product.farmer.get_full_name|default:item.product.farmer.username }}</small>
+                                    </div>
+                                </div>
+                                <span>₹{{ item.subtotal }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Subtotal" %}</span>
+                            <span>₹{{ total }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Shipping" %}</span>
+                            <span>₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{% trans "Tax" %}</span>
+                            <span>₹0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3 fw-bold">
+                            <span>{% trans "Total" %}</span>
+                            <span>₹{{ total }}</span>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="termsAgree" required>
+                            <label class="form-check-label small" for="termsAgree">
+                                {% trans "I agree to the" %} <a href="#" class="text-decoration-underline">{% trans "Terms and Conditions" %}</a>
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-lock-fill me-1"></i> {% trans "Place Order" %}
+                            </button>
+                        </div>
+                        
+                        <div class="text-center mt-3 small text-muted">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            {% trans "Secure checkout powered by FarmConnect" %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle payment method selection
+        const paymentOptions = document.querySelectorAll('.payment-option');
+        const paymentInputs = document.querySelectorAll('input[name="payment_method"]');
+        
+        paymentInputs.forEach(function(input) {
+            input.addEventListener('change', function() {
+                // Remove selected class from all options
+                paymentOptions.forEach(function(option) {
+                    option.classList.remove('selected');
+                });
+                
+                // Add selected class to the parent of the checked input
+                if (this.checked) {
+                    this.closest('.payment-option').classList.add('selected');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

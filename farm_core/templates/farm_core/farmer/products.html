@@ -1,0 +1,417 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Manage Products" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .product-img-placeholder {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+        font-size: 1.5rem;
+    }
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .table-filter-form .form-control,
+    .table-filter-form .form-select {
+        border-radius: 0.5rem;
+    }
+    .product-badge {
+        min-width: 80px;
+        text-align: center;
+    }
+    .filter-badge {
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding: 0.35rem 0.65rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .filter-badge .badge-remove {
+        margin-left: 0.4rem;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s;
+    }
+    .filter-badge .badge-remove:hover {
+        opacity: 1;
+    }
+    .table td, .table th {
+        vertical-align: middle;
+    }
+    .bulk-action-dropdown {
+        width: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">{% trans "Manage Products" %}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'farm_core:farmer_dashboard' %}">{% trans "Dashboard" %}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{% trans "Products" %}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'farm_core:add_product' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i> {% trans "Add New Product" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white p-3">
+            <div class="row g-3">
+                <div class="col-md-9">
+                    <form action="." method="get" class="d-flex table-filter-form">
+                        <div class="input-group me-2">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" value="{{ request.GET.search|default:'' }}" class="form-control" placeholder="{% trans 'Search products...' %}">
+                        </div>
+                        
+                        <select name="category" class="form-select me-2">
+                            <option value="">{% trans "All Categories" %}</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <select name="status" class="form-select me-2">
+                            <option value="">{% trans "All Status" %}</option>
+                            <option value="in_stock" {% if request.GET.status == 'in_stock' %}selected{% endif %}>{% trans "In Stock" %}</option>
+                            <option value="low_stock" {% if request.GET.status == 'low_stock' %}selected{% endif %}>{% trans "Low Stock" %}</option>
+                            <option value="out_of_stock" {% if request.GET.status == 'out_of_stock' %}selected{% endif %}>{% trans "Out of Stock" %}</option>
+                        </select>
+                        
+                        <button type="submit" class="btn btn-primary">{% trans "Filter" %}</button>
+                    </form>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-md-end">
+                        <select name="bulk_action" class="form-select bulk-action-dropdown me-2">
+                            <option value="">{% trans "Bulk Actions" %}</option>
+                            <option value="delete">{% trans "Delete Selected" %}</option>
+                            <option value="mark_in_stock">{% trans "Mark In Stock" %}</option>
+                            <option value="mark_out_of_stock">{% trans "Mark Out of Stock" %}</option>
+                        </select>
+                        <button id="apply_bulk_action" class="btn btn-outline-secondary" disabled>{% trans "Apply" %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Filters -->
+        {% if request.GET.search or request.GET.category or request.GET.status %}
+        <div class="card-body border-bottom">
+            <div class="d-flex align-items-center">
+                <strong class="me-2">{% trans "Active Filters:" %}</strong>
+                <div>
+                    {% if request.GET.search %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "Search" %}: "{{ request.GET.search }}"
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'search' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.category %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "Category" %}: {% for cat in categories %}{% if cat.id|stringformat:"i" == request.GET.category %}{{ cat.name }}{% endif %}{% endfor %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'category' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.status %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "Status" %}: 
+                        {% if request.GET.status == 'in_stock' %}{% trans "In Stock" %}
+                        {% elif request.GET.status == 'low_stock' %}{% trans "Low Stock" %}
+                        {% elif request.GET.status == 'out_of_stock' %}{% trans "Out of Stock" %}
+                        {% endif %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'status' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{% url 'farm_core:farmer_products' %}" class="btn btn-sm btn-outline-secondary ms-2">{% trans "Clear All" %}</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card-body p-0">
+            {% if products %}
+                <form id="bulk_action_form" method="post" action="{% url 'farm_core:bulk_product_action' %}">
+                    {% csrf_token %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="40">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select_all">
+                                        </div>
+                                    </th>
+                                    <th>{% trans "Product" %}</th>
+                                    <th>{% trans "Category" %}</th>
+                                    <th>{% trans "Price" %}</th>
+                                    <th>{% trans "Stock" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Created" %}</th>
+                                    <th>{% trans "Actions" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input product-checkbox" type="checkbox" name="selected_products" value="{{ product.id }}">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if product.image %}
+                                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-img me-3">
+                                            {% else %}
+                                            <div class="product-img-placeholder me-3">
+                                                <i class="bi bi-image"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ product.name }}</h6>
+                                                <small class="text-muted">ID: #{{ product.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ product.category.name }}</td>
+                                    <td>₹{{ product.price }}</td>
+                                    <td>{{ product.quantity_available }} {% trans "units" %}</td>
+                                    <td>
+                                        {% if product.quantity_available > 10 %}
+                                            <span class="badge bg-success product-badge">{% trans "In Stock" %}</span>
+                                        {% elif product.quantity_available > 0 %}
+                                            <span class="badge bg-warning product-badge">{% trans "Low Stock" %}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger product-badge">{% trans "Out of Stock" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.created_at|date:"d M Y" }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'farm_core:edit_product' pk=product.id %}" class="btn btn-sm btn-outline-primary action-btn" title="{% trans 'Edit' %}">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'farm_core:product_detail' pk=product.id %}" class="btn btn-sm btn-outline-success action-btn" title="{% trans 'View' %}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger action-btn delete-product" 
+                                                    data-product-id="{{ product.id }}" 
+                                                    data-product-name="{{ product.name }}" 
+                                                    title="{% trans 'Delete' %}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div>
+                        {% trans "Showing" %} <span class="fw-bold">{{ page_obj.start_index }}</span> {% trans "to" %} <span class="fw-bold">{{ page_obj.end_index }}</span> {% trans "of" %} <span class="fw-bold">{{ paginator.count }}</span> {% trans "products" %}
+                    </div>
+                    <nav aria-label="Products pagination">
+                        <ul class="pagination mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'First' %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Previous' %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Next' %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Last' %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-basket fs-1 text-muted mb-3"></i>
+                    <h5>{% trans "No products found" %}</h5>
+                    {% if request.GET %}
+                        <p class="text-muted">{% trans "Try changing your search criteria or" %} <a href="{% url 'farm_core:farmer_products' %}">{% trans "clear all filters" %}</a>.</p>
+                    {% else %}
+                        <p class="text-muted">{% trans "You haven't added any products yet." %}</p>
+                        <a href="{% url 'farm_core:add_product' %}" class="btn btn-success mt-3">
+                            <i class="bi bi-plus-circle me-1"></i> {% trans "Add Your First Product" %}
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Product Modal -->
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Delete Product" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Are you sure you want to delete" %} <span id="product-name-placeholder" class="fw-bold"></span>? {% trans "This action cannot be undone." %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <form id="delete-product-form" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">{% trans "Delete" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle select all checkbox
+        var selectAllCheckbox = document.getElementById('select_all');
+        var productCheckboxes = document.querySelectorAll('.product-checkbox');
+        var applyBulkActionBtn = document.getElementById('apply_bulk_action');
+        
+        selectAllCheckbox.addEventListener('change', function() {
+            var isChecked = this.checked;
+            productCheckboxes.forEach(function(checkbox) {
+                checkbox.checked = isChecked;
+            });
+            updateBulkActionButton();
+        });
+        
+        productCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', updateBulkActionButton);
+        });
+        
+        function updateBulkActionButton() {
+            var anyChecked = Array.from(productCheckboxes).some(function(checkbox) {
+                return checkbox.checked;
+            });
+            applyBulkActionBtn.disabled = !anyChecked;
+        }
+        
+        // Handle bulk action button
+        var bulkActionSelect = document.querySelector('select[name="bulk_action"]');
+        applyBulkActionBtn.addEventListener('click', function() {
+            var action = bulkActionSelect.value;
+            if (!action) {
+                alert('{% trans "Please select an action" %}');
+                return;
+            }
+            
+            var selectedProducts = Array.from(productCheckboxes)
+                                .filter(function(checkbox) {
+                                    return checkbox.checked;
+                                })
+                                .map(function(checkbox) {
+                                    return checkbox.value;
+                                });
+            
+            if (selectedProducts.length === 0) {
+                alert('{% trans "Please select at least one product" %}');
+                return;
+            }
+            
+            if (action === 'delete' && !confirm('{% trans "Are you sure you want to delete the selected products? This action cannot be undone." %}')) {
+                return;
+            }
+            
+            // Add action to form
+            var actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+            
+            var form = document.getElementById('bulk_action_form');
+            form.appendChild(actionInput);
+            form.submit();
+        });
+        
+        // Handle delete product modal
+        var deleteButtons = document.querySelectorAll('.delete-product');
+        var deleteForm = document.getElementById('delete-product-form');
+        var productNamePlaceholder = document.getElementById('product-name-placeholder');
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteProductModal'));
+        
+        deleteButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                var productId = this.getAttribute('data-product-id');
+                var productName = this.getAttribute('data-product-name');
+                
+                productNamePlaceholder.textContent = productName;
+                deleteForm.action = "{% url 'farm_core:delete_product' pk=0 %}".replace('0', productId);
+                deleteModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %} 

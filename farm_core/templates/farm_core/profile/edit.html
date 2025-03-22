@@ -1,0 +1,205 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Edit Profile" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-pic-preview {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .profile-pic-placeholder {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .form-label {
+        font-weight: 500;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+    }
+    .required-field::after {
+        content: "*";
+        color: red;
+        margin-left: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:profile' %}">{% trans "Your Profile" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Edit Profile" %}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h1 class="h3 mb-0">{% trans "Edit Your Profile" %}</h1>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <h5 class="alert-heading">{% trans "Please correct the following errors" %}:</h5>
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Profile Picture Section -->
+                            <div class="col-md-4 text-center mb-4">
+                                {% if profile_user.profile_pic %}
+                                <img src="{{ profile_user.profile_pic.url }}" alt="{{ profile_user.get_full_name }}" class="profile-pic-preview">
+                                {% else %}
+                                <div class="profile-pic-placeholder mx-auto">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.profile_pic.id_for_label }}" class="form-label">{% trans "Profile Picture" %}</label>
+                                    {{ form.profile_pic }}
+                                    {% if form.profile_pic.help_text %}
+                                    <div class="form-text text-muted small">{{ form.profile_pic.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Profile Details Section -->
+                            <div class="col-md-8">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label required-field">{% trans "First Name" %}</label>
+                                        {{ form.first_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label required-field">{% trans "Last Name" %}</label>
+                                        {{ form.last_name }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label required-field">{% trans "Email Address" %}</label>
+                                        {{ form.email }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.username.id_for_label }}" class="form-label required-field">{% trans "Username" %}</label>
+                                        {{ form.username }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label">{% trans "Phone Number" %}</label>
+                                        {{ form.phone }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="{{ form.address.id_for_label }}" class="form-label">{% trans "Address" %}</label>
+                                        {{ form.address }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.password1.id_for_label }}" class="form-label">{% trans "New Password" %} <small class="text-muted">({% trans "leave blank to keep current password" %})</small></label>
+                                {{ form.password1 }}
+                                {% if form.password1.help_text %}
+                                <div class="form-text text-muted small">{{ form.password1.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.password2.id_for_label }}" class="form-label">{% trans "Confirm New Password" %}</label>
+                                {{ form.password2 }}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'farm_core:profile' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> {% trans "Back to Profile" %}
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check2-circle me-1"></i> {% trans "Save Changes" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add the Bootstrap form-control class to all form inputs
+        document.querySelectorAll('input, textarea, select').forEach(function(element) {
+            if (element.type !== 'file') {
+                element.classList.add('form-control');
+            } else {
+                element.classList.add('form-control');
+            }
+        });
+        
+        // Profile picture preview
+        const profilePicInput = document.getElementById('{{ form.profile_pic.id_for_label }}');
+        if (profilePicInput) {
+            profilePicInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const profilePicPreview = document.querySelector('.profile-pic-preview');
+                        const profilePicPlaceholder = document.querySelector('.profile-pic-placeholder');
+                        
+                        if (profilePicPreview) {
+                            profilePicPreview.src = e.target.result;
+                        } else if (profilePicPlaceholder) {
+                            // Replace placeholder with image
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.className = 'profile-pic-preview';
+                            img.alt = 'Profile Preview';
+                            profilePicPlaceholder.parentNode.replaceChild(img, profilePicPlaceholder);
+                        }
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

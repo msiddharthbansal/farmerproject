@@ -1,0 +1,396 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% if object %}{% trans "Edit Product" %}{% else %}{% trans "Add New Product" %}{% endif %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .image-preview {
+        width: 150px;
+        height: 150px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #dee2e6;
+    }
+    .image-preview-placeholder {
+        width: 150px;
+        height: 150px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        border: 1px dashed #dee2e6;
+    }
+    .image-preview-placeholder i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .form-help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .required-field::after {
+        content: ' *';
+        color: #dc3545;
+    }
+    .quantity-field {
+        display: flex;
+        align-items: center;
+    }
+    .quantity-field .btn {
+        padding: 0.375rem 0.75rem;
+        line-height: 1.5;
+    }
+    .price-input {
+        position: relative;
+    }
+    .price-input .form-control {
+        padding-left: 2rem;
+    }
+    .price-input::before {
+        content: '₹';
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        z-index: 5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">{% if object %}{% trans "Edit Product" %}{% else %}{% trans "Add New Product" %}{% endif %}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'farm_core:farmer_dashboard' %}">{% trans "Dashboard" %}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'farm_core:farmer_products' %}">{% trans "Products" %}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{% if object %}{% trans "Edit" %}{% else %}{% trans "Add New" %}{% endif %}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data" class="form-container" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger mb-4">
+                    {% for error in form.non_field_errors %}
+                    <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- Basic Information -->
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0">{% trans "Basic Information" %}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label required-field">{% trans "Product Name" %}</label>
+                                    <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" class="form-control {% if form.name.errors %}is-invalid{% endif %}" value="{{ form.name.value|default:'' }}" required>
+                                    {% if form.name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-help-text mt-1">
+                                        {% trans "Give your product a descriptive name" %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label required-field">{% trans "Description" %}</label>
+                                    <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" class="form-control {% if form.description.errors %}is-invalid{% endif %}" rows="5" required>{{ form.description.value|default:'' }}</textarea>
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-help-text mt-1">
+                                        {% trans "Describe your product, including benefits, ingredients, and usage instructions" %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label required-field">{% trans "Category" %}</label>
+                                        <select name="{{ form.category.name }}" id="{{ form.category.id_for_label }}" class="form-select {% if form.category.errors %}is-invalid{% endif %}" required>
+                                            <option value="">{% trans "Select a category" %}</option>
+                                            {% for choice_id, choice_label in form.category.field.choices %}
+                                            {% if choice_id %}
+                                            <option value="{{ choice_id }}" {% if form.category.value|stringformat:"s" == choice_id|stringformat:"s" %}selected{% endif %}>{{ choice_label }}</option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.category.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.category.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.unit.id_for_label }}" class="form-label required-field">{% trans "Unit" %}</label>
+                                        <select name="{{ form.unit.name }}" id="{{ form.unit.id_for_label }}" class="form-select {% if form.unit.errors %}is-invalid{% endif %}" required>
+                                            <option value="">{% trans "Select a unit" %}</option>
+                                            {% for choice_id, choice_label in form.unit.field.choices %}
+                                            {% if choice_id %}
+                                            <option value="{{ choice_id }}" {% if form.unit.value|stringformat:"s" == choice_id|stringformat:"s" %}selected{% endif %}>{{ choice_label }}</option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.unit.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.unit.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0">{% trans "Product Image" %}</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    {% if form.instance.image %}
+                                    <img src="{{ form.instance.image.url }}" alt="{{ form.instance.name }}" class="image-preview mb-3">
+                                    {% else %}
+                                    <div class="image-preview-placeholder mb-3">
+                                        <i class="bi bi-image"></i>
+                                        <span>{% trans "No image uploaded" %}</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-3">
+                                        <input type="file" name="{{ form.image.name }}" id="{{ form.image.id_for_label }}" class="form-control {% if form.image.errors %}is-invalid{% endif %}" accept="image/*">
+                                        {% if form.image.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.image.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-help-text mt-1">
+                                            {% trans "Upload a clear, well-lit image of your product" %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if form.instance.image %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="remove_image" id="remove_image">
+                                    <label class="form-check-label" for="remove_image">
+                                        {% trans "Remove current image" %}
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pricing and Inventory -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0">{% trans "Pricing & Inventory" %}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.price.id_for_label }}" class="form-label required-field">{% trans "Price" %}</label>
+                                        <div class="price-input">
+                                            <input type="number" name="{{ form.price.name }}" id="{{ form.price.id_for_label }}" class="form-control {% if form.price.errors %}is-invalid{% endif %}" value="{{ form.price.value|default:'' }}" min="0" step="0.01" required>
+                                        </div>
+                                        {% if form.price.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.price.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-help-text mt-1">
+                                            {% trans "Price per unit" %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.discount_price.id_for_label }}" class="form-label">{% trans "Discount Price" %} ({% trans "optional" %})</label>
+                                        <div class="price-input">
+                                            <input type="number" name="{{ form.discount_price.name }}" id="{{ form.discount_price.id_for_label }}" class="form-control {% if form.discount_price.errors %}is-invalid{% endif %}" value="{{ form.discount_price.value|default:'' }}" min="0" step="0.01">
+                                        </div>
+                                        {% if form.discount_price.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.discount_price.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-help-text mt-1">
+                                            {% trans "Set a discounted price if on sale" %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.quantity_available.id_for_label }}" class="form-label required-field">{% trans "Quantity Available" %}</label>
+                                    <div class="quantity-field">
+                                        <input type="number" name="{{ form.quantity_available.name }}" id="{{ form.quantity_available.id_for_label }}" class="form-control {% if form.quantity_available.errors %}is-invalid{% endif %}" value="{{ form.quantity_available.value|default:'0' }}" min="0" required>
+                                    </div>
+                                    {% if form.quantity_available.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.quantity_available.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-help-text mt-1">
+                                        {% trans "Current stock quantity" %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="{{ form.is_organic.name }}" id="{{ form.is_organic.id_for_label }}" {% if form.is_organic.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="{{ form.is_organic.id_for_label }}">
+                                            {% trans "This product is organic" %}
+                                        </label>
+                                        {% if form.is_organic.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.is_organic.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="{{ form.is_available.name }}" id="{{ form.is_available.id_for_label }}" {% if form.is_available.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="{{ form.is_available.id_for_label }}">
+                                            {% trans "Make this product available for purchase" %}
+                                        </label>
+                                        {% if form.is_available.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.is_available.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Details -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0">{% trans "Additional Details" %}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.harvest_date.id_for_label }}" class="form-label">{% trans "Harvest Date" %} ({% trans "optional" %})</label>
+                                    <input type="date" name="{{ form.harvest_date.name }}" id="{{ form.harvest_date.id_for_label }}" class="form-control {% if form.harvest_date.errors %}is-invalid{% endif %}" value="{{ form.harvest_date.value|date:'Y-m-d'|default:'' }}">
+                                    {% if form.harvest_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.harvest_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.expiry_date.id_for_label }}" class="form-label">{% trans "Expiry Date" %} ({% trans "optional" %})</label>
+                                    <input type="date" name="{{ form.expiry_date.name }}" id="{{ form.expiry_date.id_for_label }}" class="form-control {% if form.expiry_date.errors %}is-invalid{% endif %}" value="{{ form.expiry_date.value|date:'Y-m-d'|default:'' }}">
+                                    {% if form.expiry_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.expiry_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.nutritional_info.id_for_label }}" class="form-label">{% trans "Nutritional Information" %} ({% trans "optional" %})</label>
+                                    <textarea name="{{ form.nutritional_info.name }}" id="{{ form.nutritional_info.id_for_label }}" class="form-control {% if form.nutritional_info.errors %}is-invalid{% endif %}" rows="4">{{ form.nutritional_info.value|default:'' }}</textarea>
+                                    {% if form.nutritional_info.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nutritional_info.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-help-text mt-1">
+                                        {% trans "Provide nutritional details like calories, protein, etc." %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% url 'farm_core:farmer_products' %}" class="btn btn-outline-secondary me-2">{% trans "Cancel" %}</a>
+                    <button type="submit" class="btn btn-success">
+                        {% if object %}{% trans "Update Product" %}{% else %}{% trans "Create Product" %}{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Image preview functionality
+        const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+        const previewContainer = document.querySelector('.image-preview-placeholder, .image-preview');
+        
+        if (imageInput && previewContainer) {
+            imageInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Replace the placeholder with an actual image
+                        if (previewContainer.classList.contains('image-preview-placeholder')) {
+                            // Create new image element
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = 'Product Preview';
+                            img.classList.add('image-preview', 'mb-3');
+                            
+                            // Replace placeholder with image
+                            previewContainer.parentNode.replaceChild(img, previewContainer);
+                        } else {
+                            // Update existing image
+                            previewContainer.src = e.target.result;
+                        }
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Handle remove image checkbox
+        const removeImageCheckbox = document.getElementById('remove_image');
+        if (removeImageCheckbox) {
+            removeImageCheckbox.addEventListener('change', function() {
+                imageInput.disabled = this.checked;
+            });
+        }
+    });
+</script>
+{% endblock %} 

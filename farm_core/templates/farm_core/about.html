@@ -1,0 +1,89 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "About Us - FarmConnect" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12">
+            <h1 class="display-4 text-success mb-4">{% trans "About FarmConnect" %}</h1>
+            <p class="lead">{% trans "Connecting farmers directly to consumers for fresher produce and better prices." %}</p>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <h2>{% trans "Our Mission" %}</h2>
+            <p>{% trans "FarmConnect aims to create a sustainable agricultural ecosystem by connecting farmers directly with consumers. By eliminating middlemen, we ensure farmers get fair prices for their produce while consumers receive fresh, high-quality products at reasonable rates." %}</p>
+            <p>{% trans "We believe in supporting local agriculture and promoting sustainable farming practices that benefit both people and the planet." %}</p>
+        </div>
+        <div class="col-md-6">
+            <img src="{% static 'images/about-mission.jpg' %}" alt="Our Mission" class="img-fluid rounded shadow" onerror="this.src='https://placehold.co/800x500?text=Our+Mission'">
+        </div>
+    </div>
+    
+    <div class="row mb-5 flex-md-row-reverse">
+        <div class="col-md-6">
+            <h2>{% trans "How It Works" %}</h2>
+            <ol class="mt-3">
+                <li class="mb-2">{% trans "Farmers create accounts and list their products with details, photos and prices." %}</li>
+                <li class="mb-2">{% trans "Consumers browse and order products directly from farmers, with options for payment and delivery." %}</li>
+                <li class="mb-2">{% trans "Farmers receive orders and prepare products for delivery or pickup." %}</li>
+                <li class="mb-2">{% trans "Consumers enjoy farm-fresh products while supporting local farmers." %}</li>
+            </ol>
+            <p>{% trans "This direct model ensures transparency, freshness and fair pricing throughout the process." %}</p>
+        </div>
+        <div class="col-md-6">
+            <img src="{% static 'images/about-howitworks.jpg' %}" alt="How It Works" class="img-fluid rounded shadow" onerror="this.src='https://placehold.co/800x500?text=How+It+Works'">
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center mb-4">{% trans "Our Values" %}</h2>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <img src="{% static 'images/value-sustainability.png' %}" alt="Sustainability" class="img-fluid mb-3" width="80" onerror="this.src='https://placehold.co/80?text=Sustainability'">
+                            <h4 class="card-title">{% trans "Sustainability" %}</h4>
+                            <p class="card-text">{% trans "We promote sustainable farming practices and environmental responsibility." %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <img src="{% static 'images/value-fairness.png' %}" alt="Fairness" class="img-fluid mb-3" width="80" onerror="this.src='https://placehold.co/80?text=Fairness'">
+                            <h4 class="card-title">{% trans "Fairness" %}</h4>
+                            <p class="card-text">{% trans "We believe in fair prices for farmers and consumers with transparent transactions." %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <img src="{% static 'images/value-community.png' %}" alt="Community" class="img-fluid mb-3" width="80" onerror="this.src='https://placehold.co/80?text=Community'">
+                            <h4 class="card-title">{% trans "Community" %}</h4>
+                            <p class="card-text">{% trans "We're building a community that supports local agriculture and food security." %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="mb-4">{% trans "Join Our Mission" %}</h2>
+            <p class="lead mb-4">{% trans "Whether you're a farmer looking to sell your produce or a consumer seeking fresh products, join us today!" %}</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'farm_core:signup' %}" class="btn btn-success btn-lg">{% trans "Join Now" %}</a>
+                <a href="{% url 'farm_core:contact' %}" class="btn btn-outline-success btn-lg">{% trans "Contact Us" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

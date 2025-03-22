@@ -1,0 +1,140 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% translate "Setup Product Categories" %}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .setup-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .setup-title {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+        border-bottom: 2px solid #f1c40f;
+        padding-bottom: 0.5rem;
+    }
+    .setup-content {
+        margin-bottom: 2rem;
+    }
+    .category-list {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .category-list li {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-left: 3px solid #3498db;
+        padding-left: 1rem;
+        background-color: #f9f9f9;
+    }
+    .category-name {
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .category-description {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+    .setup-button {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .setup-button:hover {
+        background-color: #2ecc71;
+    }
+    .status-message {
+        margin: 1rem 0;
+        padding: 1rem;
+        border-radius: 4px;
+    }
+    .status-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .status-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <h1 class="setup-title">{% translate "Product Categories Setup" %}</h1>
+    
+    <div class="setup-content">
+        <p>{% translate "Product categories help organize your farm products and make them easier for customers to find. The following default categories will be created:" %}</p>
+        
+        {% if result %}
+        <div class="status-message {% if 'Error' in result %}status-error{% else %}status-success{% endif %}">
+            {{ result }}
+        </div>
+        {% endif %}
+        
+        <ul class="category-list">
+            <li>
+                <div class="category-name">Vegetables</div>
+                <div class="category-description">Fresh vegetables directly from farms</div>
+            </li>
+            <li>
+                <div class="category-name">Fruits</div>
+                <div class="category-description">Seasonal and exotic fruits</div>
+            </li>
+            <li>
+                <div class="category-name">Dairy</div>
+                <div class="category-description">Fresh milk, cheese, butter, and other dairy products</div>
+            </li>
+            <li>
+                <div class="category-name">Grains</div>
+                <div class="category-description">Rice, wheat, barley, and other grains</div>
+            </li>
+            <li>
+                <div class="category-name">Pulses</div>
+                <div class="category-description">Beans, lentils, and other legumes</div>
+            </li>
+            <li>
+                <div class="category-name">Nuts and Seeds</div>
+                <div class="category-description">Almonds, walnuts, chia seeds, and more</div>
+            </li>
+            <li>
+                <div class="category-name">Herbs and Spices</div>
+                <div class="category-description">Fresh and dried herbs and spices</div>
+            </li>
+            <li>
+                <div class="category-name">Honey and Preserves</div>
+                <div class="category-description">Natural honey and homemade preserves</div>
+            </li>
+            <li>
+                <div class="category-name">Oils</div>
+                <div class="category-description">Cold-pressed oils and traditional extracts</div>
+            </li>
+            <li>
+                <div class="category-name">Organic Products</div>
+                <div class="category-description">Certified organic farm products</div>
+            </li>
+        </ul>
+    </div>
+    
+    <a href="{% url 'farm_core:create_categories' %}?run=true" class="setup-button">
+        {% translate "Create These Categories" %}
+    </a>
+</div>
+{% endblock %} 

@@ -1,0 +1,237 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Shopping Cart" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-item {
+        transition: background-color 0.2s;
+    }
+    .cart-item:hover {
+        background-color: #f8f9fa;
+    }
+    .product-img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .quantity-control {
+        width: 120px;
+    }
+    .remove-item {
+        color: #dc3545;
+        transition: color 0.2s;
+        cursor: pointer;
+    }
+    .remove-item:hover {
+        color: #b02a37;
+    }
+    .cart-summary {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+    }
+    .promo-code {
+        border-radius: 10px;
+        border: 1px dashed #dee2e6;
+    }
+    .empty-cart-container {
+        min-height: 40vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .empty-cart-icon {
+        font-size: 5rem;
+        color: #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 767.98px) {
+        .product-info h5 {
+            font-size: 1rem;
+        }
+        .product-img {
+            width: 60px;
+            height: 60px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% trans "Shopping Cart" %}</li>
+        </ol>
+    </nav>
+
+    <h1 class="h2 mb-4">{% trans "Shopping Cart" %}</h1>
+
+    {% if cart_items %}
+    <div class="row g-4">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{% trans "Cart Items" %} ({{ item_count }})</h5>
+                        <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-arrow-left"></i> {% trans "Continue Shopping" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <form action="{% url 'farm_core:update_cart' %}" method="post">
+                        {% csrf_token %}
+                        <div class="table-responsive">
+                            <table class="table table-borderless align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">{% trans "Product" %}</th>
+                                        <th scope="col" class="text-center">{% trans "Price" %}</th>
+                                        <th scope="col" class="text-center">{% trans "Quantity" %}</th>
+                                        <th scope="col" class="text-end">{% trans "Subtotal" %}</th>
+                                        <th scope="col" class="text-center">{% trans "Actions" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart_items %}
+                                    <tr class="cart-item">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if item.product.image %}
+                                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="product-img me-3">
+                                                {% else %}
+                                                <div class="product-img me-3 bg-light d-flex align-items-center justify-content-center">
+                                                    <i class="bi bi-image text-secondary"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div class="product-info">
+                                                    <h5 class="mb-1">{{ item.product.name }}</h5>
+                                                    <small class="text-muted">
+                                                        {% trans "Category:" %} {{ item.product.category.name }} |
+                                                        {% trans "Seller:" %} {{ item.product.farmer.get_full_name|default:item.product.farmer.username }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">₹{{ item.product.price }}</td>
+                                        <td class="text-center">
+                                            <input type="hidden" name="product_id" value="{{ item.product.id }}">
+                                            <div class="input-group quantity-control mx-auto">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="decrementQuantity(this)">-</button>
+                                                <input type="number" name="quantity" class="form-control text-center" value="{{ item.quantity }}" min="1" max="{{ item.product.quantity_available }}">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="incrementQuantity(this, {{ item.product.quantity_available }})">+</button>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">₹{{ item.subtotal }}</td>
+                                        <td class="text-center">
+                                            <form action="{% url 'farm_core:remove_from_cart' item_id=item.product.id %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-link p-0 remove-item" title="{% trans 'Remove item' %}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-3 border-top">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'farm_core:product_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i> {% trans "Continue Shopping" %}
+                                </a>
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="bi bi-arrow-repeat me-1"></i> {% trans "Update Cart" %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cart Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm cart-summary mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">{% trans "Order Summary" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Subtotal" %}</span>
+                        <span>₹{{ total }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Shipping" %}</span>
+                        <span>₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Tax" %}</span>
+                        <span>₹0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3 fw-bold">
+                        <span>{% trans "Total" %}</span>
+                        <span>₹{{ total }}</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'farm_core:checkout' %}" class="btn btn-success">
+                            <i class="bi bi-credit-card me-1"></i> {% trans "Proceed to Checkout" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Promo Code -->
+            <div class="card shadow-sm promo-code">
+                <div class="card-body">
+                    <h6 class="mb-3">{% trans "Apply Promo Code" %}</h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="{% trans 'Enter promo code' %}">
+                        <button class="btn btn-outline-success" type="button">{% trans "Apply" %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-cart-container">
+        <i class="bi bi-cart-x empty-cart-icon"></i>
+        <h3 class="mb-3">{% trans "Your cart is empty" %}</h3>
+        <p class="text-muted mb-4">{% trans "Looks like you haven't added any products to your cart yet." %}</p>
+        <a href="{% url 'farm_core:product_list' %}" class="btn btn-success">
+            <i class="bi bi-shop me-1"></i> {% trans "Browse Products" %}
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Quantity increment and decrement functions
+    function incrementQuantity(button, max) {
+        const input = button.previousElementSibling;
+        const currentValue = parseInt(input.value);
+        if (currentValue < max) {
+            input.value = currentValue + 1;
+        }
+    }
+    
+    function decrementQuantity(button) {
+        const input = button.nextElementSibling;
+        const currentValue = parseInt(input.value);
+        if (currentValue > 1) {
+            input.value = currentValue - 1;
+        }
+    }
+</script>
+{% endblock %} 

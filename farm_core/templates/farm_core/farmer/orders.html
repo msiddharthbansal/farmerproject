@@ -1,0 +1,548 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Manage Orders" %} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-id {
+        font-weight: 600;
+        color: #495057;
+    }
+    .order-info {
+        font-size: 0.85rem;
+    }
+    .status-badge {
+        min-width: 100px;
+        text-align: center;
+    }
+    .order-product-img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    .product-img-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .date-badge {
+        background-color: #f8f9fa;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+    }
+    .consumer-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+    }
+    .filter-badge {
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding: 0.35rem 0.65rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .filter-badge .badge-remove {
+        margin-left: 0.4rem;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s;
+    }
+    .filter-badge .badge-remove:hover {
+        opacity: 1;
+    }
+    .order-detail-row {
+        border-bottom: 1px solid #e9ecef;
+        padding: 1rem 0;
+    }
+    .order-detail-row:last-child {
+        border-bottom: none;
+    }
+    .order-timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+        padding-left: 2rem;
+    }
+    .order-timeline-item:before {
+        content: '';
+        position: absolute;
+        left: 0.65rem;
+        top: 0.3rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #28a745;
+        z-index: 1;
+    }
+    .order-timeline-item:after {
+        content: '';
+        position: absolute;
+        left: 0.85rem;
+        top: 1rem;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    .order-timeline-item:last-child:after {
+        display: none;
+    }
+    .order-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .order-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">{% trans "Manage Orders" %}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'farm_core:farmer_dashboard' %}">{% trans "Dashboard" %}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{% trans "Orders" %}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Order Filter -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white p-3">
+            <form action="." method="get" class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" value="{{ request.GET.search|default:'' }}" class="form-control" placeholder="{% trans 'Search orders...' %}">
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">{% trans "All Status" %}</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Pending" %}</option>
+                        <option value="processing" {% if request.GET.status == 'processing' %}selected{% endif %}>{% trans "Processing" %}</option>
+                        <option value="shipped" {% if request.GET.status == 'shipped' %}selected{% endif %}>{% trans "Shipped" %}</option>
+                        <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>{% trans "Delivered" %}</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <select name="sort" class="form-select">
+                        <option value="latest" {% if request.GET.sort == 'latest' or not request.GET.sort %}selected{% endif %}>{% trans "Latest First" %}</option>
+                        <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>{% trans "Oldest First" %}</option>
+                        <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>{% trans "Price: High to Low" %}</option>
+                        <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>{% trans "Price: Low to High" %}</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-calendar"></i></span>
+                        <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="form-control" placeholder="{% trans 'From date' %}">
+                        <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="form-control" placeholder="{% trans 'To date' %}">
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">{% trans "Filter" %}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Active Filters -->
+        {% if request.GET.search or request.GET.status or request.GET.date_from or request.GET.date_to %}
+        <div class="card-body border-bottom">
+            <div class="d-flex align-items-center flex-wrap">
+                <strong class="me-2">{% trans "Active Filters:" %}</strong>
+                <div>
+                    {% if request.GET.search %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "Search" %}: "{{ request.GET.search }}"
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'search' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.status %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "Status" %}: 
+                        {% if request.GET.status == 'pending' %}{% trans "Pending" %}
+                        {% elif request.GET.status == 'processing' %}{% trans "Processing" %}
+                        {% elif request.GET.status == 'shipped' %}{% trans "Shipped" %}
+                        {% elif request.GET.status == 'delivered' %}{% trans "Delivered" %}
+                        {% elif request.GET.status == 'cancelled' %}{% trans "Cancelled" %}
+                        {% endif %}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'status' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.date_from %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "From" %}: {{ request.GET.date_from }}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'date_from' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    {% if request.GET.date_to %}
+                    <span class="badge bg-primary filter-badge">
+                        {% trans "To" %}: {{ request.GET.date_to }}
+                        <a href="?{% for key, value in request.GET.items %}{% if key != 'date_to' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="text-white badge-remove"><i class="bi bi-x"></i></a>
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{% url 'farm_core:farmer_orders' %}" class="btn btn-sm btn-outline-secondary ms-2">{% trans "Clear All" %}</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Orders List -->
+    <div class="row g-4">
+        {% if orders %}
+            {% for order in orders %}
+            <div class="col-md-6">
+                <div class="card order-card shadow-sm h-100">
+                    <div class="card-header bg-white p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 order-id">#{{ order.id }}</h5>
+                            {% if order.status == 'pending' %}
+                                <span class="badge bg-warning status-badge">{% trans "Pending" %}</span>
+                            {% elif order.status == 'processing' %}
+                                <span class="badge bg-info status-badge">{% trans "Processing" %}</span>
+                            {% elif order.status == 'shipped' %}
+                                <span class="badge bg-primary status-badge">{% trans "Shipped" %}</span>
+                            {% elif order.status == 'delivered' %}
+                                <span class="badge bg-success status-badge">{% trans "Delivered" %}</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger status-badge">{% trans "Cancelled" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <div class="d-flex align-items-center mb-3">
+                                {% if order.consumer.profile_picture %}
+                                <img src="{{ order.consumer.profile_picture.url }}" alt="{{ order.consumer.username }}" class="consumer-avatar me-2">
+                                {% else %}
+                                <div class="avatar-placeholder me-2">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ order.consumer.get_full_name|default:order.consumer.username }}</h6>
+                                    <small class="text-muted">{{ order.consumer.email }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex mb-2">
+                                    <span class="date-badge me-2">
+                                        <i class="bi bi-calendar-check me-1"></i> {{ order.order_date|date:"d M Y" }}
+                                    </span>
+                                    <span class="date-badge">
+                                        <i class="bi bi-clock me-1"></i> {{ order.order_date|date:"H:i" }}
+                                    </span>
+                                </div>
+                                <div class="order-info">
+                                    <div class="mb-1"><strong>{% trans "Address" %}:</strong> {{ order.shipping_address|default:"Not specified" }}</div>
+                                    <div><strong>{% trans "Phone" %}:</strong> {{ order.phone_number|default:"Not specified" }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center">
+                                {% if order.product.image %}
+                                <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}" class="order-product-img me-3">
+                                {% else %}
+                                <div class="product-img-placeholder me-3">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">{{ order.product.name }}</h6>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="text-muted">{{ order.quantity }} x ₹{{ order.product.price }}</span>
+                                        <span class="fw-bold">₹{{ order.total_price }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">{% trans "Order Status" %}</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ order.id }}">
+                                    <i class="bi bi-pencil-square me-1"></i> {% trans "Update Status" %}
+                                </button>
+                            </div>
+                            
+                            <div class="order-timeline">
+                                {% if order.status == 'pending' or order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %}
+                                <div class="order-timeline-item">
+                                    <div class="fw-bold">{% trans "Order Placed" %}</div>
+                                    <div class="text-muted small">{{ order.order_date|date:"d M Y, H:i" }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %}
+                                <div class="order-timeline-item">
+                                    <div class="fw-bold">{% trans "Processing" %}</div>
+                                    <div class="text-muted small">{{ order.processing_date|date:"d M Y, H:i"|default:"--" }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if order.status == 'shipped' or order.status == 'delivered' %}
+                                <div class="order-timeline-item">
+                                    <div class="fw-bold">{% trans "Shipped" %}</div>
+                                    <div class="text-muted small">{{ order.shipped_date|date:"d M Y, H:i"|default:"--" }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if order.status == 'delivered' %}
+                                <div class="order-timeline-item">
+                                    <div class="fw-bold">{% trans "Delivered" %}</div>
+                                    <div class="text-muted small">{{ order.delivered_date|date:"d M Y, H:i"|default:"--" }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if order.status == 'cancelled' %}
+                                <div class="order-timeline-item">
+                                    <div class="fw-bold text-danger">{% trans "Cancelled" %}</div>
+                                    <div class="text-muted small">{{ order.cancelled_date|date:"d M Y, H:i"|default:"--" }}</div>
+                                    <div class="small">{{ order.cancellation_reason|default:"No reason provided" }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="d-block fw-bold">{% trans "Total" %}: ₹{{ order.total_price }}</span>
+                                <small class="text-muted">{% trans "Payment" %}: {{ order.payment_method|default:"Not specified" }}</small>
+                            </div>
+                            <div>
+                                <a href="#" class="btn btn-sm btn-outline-success me-2" onclick="window.print()">
+                                    <i class="bi bi-printer me-1"></i> {% trans "Print" %}
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#contactBuyerModal{{ order.id }}">
+                                    <i class="bi bi-chat-dots me-1"></i> {% trans "Contact" %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Update Status Modal -->
+            <div class="modal fade" id="updateStatusModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'farm_core:update_order_status' pk=order.id %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">{% trans "Update Order Status" %}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="order-status-{{ order.id }}" class="form-label">{% trans "Order Status" %}</label>
+                                    <select id="order-status-{{ order.id }}" name="status" class="form-select order-status-select" data-order-id="{{ order.id }}">
+                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>{% trans "Pending" %}</option>
+                                        <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>{% trans "Processing" %}</option>
+                                        <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>{% trans "Shipped" %}</option>
+                                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>{% trans "Delivered" %}</option>
+                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="cancellation-reason-{{ order.id }}" class="mb-3 {% if order.status != 'cancelled' %}d-none{% endif %}">
+                                    <label for="reason-{{ order.id }}" class="form-label">{% trans "Cancellation Reason" %}</label>
+                                    <textarea id="reason-{{ order.id }}" name="cancellation_reason" class="form-control" rows="3">{{ order.cancellation_reason|default:"" }}</textarea>
+                                </div>
+                                
+                                {% if order.status == 'shipped' %}
+                                <div class="mb-3">
+                                    <label for="tracking-{{ order.id }}" class="form-label">{% trans "Tracking Number" %} ({% trans "optional" %})</label>
+                                    <input type="text" id="tracking-{{ order.id }}" name="tracking_number" class="form-control" value="{{ order.tracking_number|default:"" }}">
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label for="notes-{{ order.id }}" class="form-label">{% trans "Notes" %} ({% trans "optional" %})</label>
+                                    <textarea id="notes-{{ order.id }}" name="notes" class="form-control" rows="3">{{ order.notes|default:"" }}</textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Update Status" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Buyer Modal -->
+            <div class="modal fade" id="contactBuyerModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'farm_core:contact_buyer' pk=order.id %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">{% trans "Contact Buyer" %}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="contact-subject-{{ order.id }}" class="form-label">{% trans "Subject" %}</label>
+                                    <input type="text" id="contact-subject-{{ order.id }}" name="subject" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="contact-message-{{ order.id }}" class="form-label">{% trans "Message" %}</label>
+                                    <textarea id="contact-message-{{ order.id }}" name="message" class="form-control" rows="4" required></textarea>
+                                </div>
+                                
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="send-copy-{{ order.id }}" name="send_copy">
+                                    <label class="form-check-label" for="send-copy-{{ order.id }}">
+                                        {% trans "Send a copy to my email" %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans "Send Message" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="col-12 mt-3">
+                <nav aria-label="Orders pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'First' %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Previous' %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Next' %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="{% trans 'Last' %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                        <h4>{% trans "No orders found" %}</h4>
+                        {% if request.GET %}
+                            <p class="text-muted">{% trans "Try changing your search criteria or" %} <a href="{% url 'farm_core:farmer_orders' %}">{% trans "clear all filters" %}</a>.</p>
+                        {% else %}
+                            <p class="text-muted">{% trans "You don't have any orders yet." %}</p>
+                            <p>{% trans "Once customers place orders for your products, they will appear here." %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all status select elements using a class
+        var statusSelects = document.querySelectorAll('.order-status-select');
+        
+        // Add event listeners to each select
+        statusSelects.forEach(function(select) {
+            // Get the associated order ID from data attribute
+            var orderId = select.getAttribute('data-order-id');
+            var cancellationDiv = document.getElementById('cancellation-reason-' + orderId);
+            
+            if (cancellationDiv) {
+                // Check initial state
+                if (select.value === 'cancelled') {
+                    cancellationDiv.classList.remove('d-none');
+                } else {
+                    cancellationDiv.classList.add('d-none');
+                }
+                
+                // Add change listener
+                select.addEventListener('change', function() {
+                    if (this.value === 'cancelled') {
+                        cancellationDiv.classList.remove('d-none');
+                    } else {
+                        cancellationDiv.classList.add('d-none');
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %} 

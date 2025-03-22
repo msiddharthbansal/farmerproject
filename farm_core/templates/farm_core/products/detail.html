@@ -1,0 +1,390 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ product.name }} - FarmConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-gallery img {
+        border-radius: 10px;
+        transition: transform 0.3s;
+        cursor: pointer;
+    }
+    .product-gallery img:hover {
+        transform: scale(1.05);
+    }
+    .farmer-info {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+    .quantity-selector {
+        max-width: 140px;
+    }
+    .product-meta {
+        font-size: 0.9rem;
+    }
+    .product-features li {
+        margin-bottom: 10px;
+    }
+    .related-product-card {
+        transition: transform 0.3s;
+    }
+    .related-product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:home' %}">{% trans "Home" %}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'farm_core:product_list' %}">{% trans "Products" %}</a></li>
+            {% if product.category %}
+            <li class="breadcrumb-item">{{ product.category.name }}</li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Product Details Section -->
+    <div class="row">
+        <!-- Product Gallery -->
+        <div class="col-lg-6 mb-4">
+            <div class="position-relative mb-3">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" id="main-product-image">
+                {% else %}
+                <img src="https://placehold.co/800x600?text=Product" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" id="main-product-image">
+                {% endif %}
+                
+                <!-- Product Status Badge -->
+                {% if product.quantity_available <= 5 and product.quantity_available > 0 %}
+                <div class="position-absolute top-0 end-0 p-3">
+                    <span class="badge bg-warning p-2">{% trans "Limited Stock" %}</span>
+                </div>
+                {% elif product.quantity_available <= 0 %}
+                <div class="position-absolute top-0 end-0 p-3">
+                    <span class="badge bg-danger p-2">{% trans "Out of Stock" %}</span>
+                </div>
+                {% endif %}
+                
+                <!-- Price Badge -->
+                <div class="position-absolute bottom-0 start-0 p-3">
+                    <span class="badge bg-success p-2 fs-5">₹{{ product.price }}</span>
+                </div>
+            </div>
+            
+            <!-- Thumbnail Gallery (if you had multiple images) -->
+            <div class="row product-gallery g-2">
+                <div class="col-3">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" onclick="document.getElementById('main-product-image').src=this.src">
+                    {% else %}
+                    <img src="https://placehold.co/800x600?text=Product" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" onclick="document.getElementById('main-product-image').src=this.src">
+                    {% endif %}
+                </div>
+                <div class="col-3">
+                    <img src="https://placehold.co/800x600?text=Gallery+1" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" onclick="document.getElementById('main-product-image').src=this.src">
+                </div>
+                <div class="col-3">
+                    <img src="https://placehold.co/800x600?text=Gallery+2" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" onclick="document.getElementById('main-product-image').src=this.src">
+                </div>
+                <div class="col-3">
+                    <img src="https://placehold.co/800x600?text=Gallery+3" class="img-fluid rounded shadow-sm" alt="{{ product.name }}" onclick="document.getElementById('main-product-image').src=this.src">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Information -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h1 class="card-title fw-bold">{{ product.name }}</h1>
+                    
+                    <div class="d-flex mb-3 align-items-center">
+                        <span class="badge bg-secondary me-2 p-2">{{ product.category.name }}</span>
+                        <div class="text-muted small me-3">
+                            <i class="bi bi-calendar"></i> {% trans "Added on" %} {{ product.created_at|date }}
+                        </div>
+                        <div class="ms-auto">
+                            <a href="#" class="text-muted me-2" title="{% trans 'Share' %}">
+                                <i class="bi bi-share"></i>
+                            </a>
+                            <a href="#" class="text-muted" title="{% trans 'Save for later' %}">
+                                <i class="bi bi-bookmark"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-success mb-0">₹{{ product.price }}</h3>
+                        <div class="text-muted small">{% trans "Inclusive of all taxes" %}</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>{% trans "Description" %}</h5>
+                        <p>{{ product.description }}</p>
+                    </div>
+
+                    <!-- Product Availability -->
+                    <div class="mb-4">
+                        <h5>{% trans "Availability" %}</h5>
+                        {% if product.quantity_available > 10 %}
+                            <div class="text-success"><i class="bi bi-check-circle-fill"></i> {% trans "In Stock" %} ({{ product.quantity_available }} {% trans "units available" %})</div>
+                        {% elif product.quantity_available > 0 %}
+                            <div class="text-warning"><i class="bi bi-exclamation-circle-fill"></i> {% trans "Only" %} {{ product.quantity_available }} {% trans "units left" %}</div>
+                        {% else %}
+                            <div class="text-danger"><i class="bi bi-x-circle-fill"></i> {% trans "Out of Stock" %}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Order Form -->
+                    {% if product.quantity_available > 0 %}
+                    <form action="{% url 'farm_core:create_order' product_id=product.id %}" method="get" class="mb-4">
+                        <h5>{% trans "Order Now" %}</h5>
+                        <div class="d-flex align-items-center mb-3">
+                            <label for="quantity" class="form-label me-3 mb-0">{% trans "Quantity:" %}</label>
+                            <div class="input-group quantity-selector">
+                                <button type="button" class="btn btn-outline-secondary" onclick="decrementQuantity()"><i class="bi bi-dash"></i></button>
+                                <input type="number" id="quantity" name="quantity" class="form-control text-center" value="1" min="1" max="{{ product.quantity_available }}">
+                                <button type="button" class="btn btn-outline-secondary" onclick="incrementQuantity()"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                        
+                        {% if user.is_authenticated %}
+                            <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                                <i class="bi bi-cart-plus"></i> {% trans "Order Now" %}
+                            </button>
+                        {% else %}
+                            <a href="{% url 'farm_core:login' %}?next={% url 'farm_core:create_order' product_id=product.id %}" class="btn btn-success btn-lg w-100 mb-2">
+                                <i class="bi bi-box-arrow-in-right"></i> {% trans "Login to Order" %}
+                            </a>
+                        {% endif %}
+                    </form>
+                    {% else %}
+                        <div class="mb-4">
+                            <h5>{% trans "Order Now" %}</h5>
+                            <button class="btn btn-secondary btn-lg w-100" disabled>
+                                <i class="bi bi-x-circle"></i> {% trans "Out of Stock" %}
+                            </button>
+                            <div class="small text-muted mt-2 text-center">
+                                <i class="bi bi-bell"></i> 
+                                <a href="#" class="text-muted text-decoration-underline">{% trans "Get notified when back in stock" %}</a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Farmer Information -->
+            <div class="farmer-info mb-4">
+                <div class="d-flex">
+                    {% if product.farmer.profile_pic %}
+                    <img src="{{ product.farmer.profile_pic.url }}" class="rounded-circle me-3" width="60" height="60" alt="{{ product.farmer.get_full_name }}">
+                    {% else %}
+                    <div class="me-3">
+                        <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h5 class="mb-1">{{ product.farmer.get_full_name|default:product.farmer.username }}</h5>
+                        <div class="text-muted small mb-2">{% trans "Farmer" %}</div>
+                        <a href="#" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-shop"></i> {% trans "View All Products" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Product Information Tabs -->
+    <div class="card mb-5 shadow-sm">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-tab-pane" type="button" role="tab" aria-controls="details-tab-pane" aria-selected="true">
+                        {% trans "Details" %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="shipping-tab" data-bs-toggle="tab" data-bs-target="#shipping-tab-pane" type="button" role="tab" aria-controls="shipping-tab-pane" aria-selected="false">
+                        {% trans "Shipping & Delivery" %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane" type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">
+                        {% trans "Reviews" %}
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="productTabsContent">
+                <div class="tab-pane fade show active" id="details-tab-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>{% trans "Product Features" %}</h5>
+                            <ul class="product-features">
+                                <li>{% trans "Freshly harvested directly from the farm" %}</li>
+                                <li>{% trans "No preservatives or artificial additives" %}</li>
+                                <li>{% trans "Sustainably grown using eco-friendly practices" %}</li>
+                                <li>{% trans "Supporting local farmers and agriculture" %}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>{% trans "Product Information" %}</h5>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">{% trans "Category" %}</th>
+                                        <td>{{ product.category.name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% trans "Seller" %}</th>
+                                        <td>{{ product.farmer.get_full_name|default:product.farmer.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% trans "Added On" %}</th>
+                                        <td>{{ product.created_at|date }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% trans "Last Updated" %}</th>
+                                        <td>{{ product.updated_at|date }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="shipping-tab-pane" role="tabpanel" aria-labelledby="shipping-tab" tabindex="0">
+                    <h5>{% trans "Shipping Information" %}</h5>
+                    <p>{% trans "We deliver farm-fresh products directly to your doorstep. Our shipping and delivery practices are designed to ensure products arrive in the best condition." %}</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-truck me-2 text-success"></i>{% trans "Delivery Time" %}</h6>
+                                    <p class="mb-0">{% trans "We typically deliver within 24-48 hours of order placement to ensure maximum freshness." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6><i class="bi bi-currency-exchange me-2 text-success"></i>{% trans "Return Policy" %}</h6>
+                                    <p class="mb-0">{% trans "If you're not satisfied with the quality of the products, contact us within 24 hours of delivery for a replacement or refund." %}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
+                    <h5>{% trans "Customer Reviews" %}</h5>
+                    
+                    <!-- Sample Reviews -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-circle me-2" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <h6 class="mb-0">{% trans "Sample Customer" %}</h6>
+                                        <div class="text-muted small">{% trans "2 weeks ago" %}</div>
+                                    </div>
+                                </div>
+                                <div class="text-warning">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-half"></i>
+                                </div>
+                            </div>
+                            <p>{% trans "The products were incredibly fresh and tasty. Excellent quality and arrived in perfect condition." %}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- More Reviews Placeholder -->
+                    <div class="text-center py-3">
+                        <p>{% trans "Be the first to review this product!" %}</p>
+                        {% if user.is_authenticated %}
+                        <button class="btn btn-outline-success">
+                            <i class="bi bi-pencil"></i> {% trans "Write a Review" %}
+                        </button>
+                        {% else %}
+                        <a href="{% url 'farm_core:login' %}" class="btn btn-outline-success">
+                            <i class="bi bi-box-arrow-in-right"></i> {% trans "Login to Write a Review" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Products -->
+    <div class="related-products mb-5">
+        <h3 class="mb-4">{% trans "Related Products" %}</h3>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            {% for related in product.category.products.all|slice:":4" %}
+                {% if related.id != product.id %}
+                <div class="col">
+                    <div class="card h-100 related-product-card">
+                        {% if related.image %}
+                        <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}" style="height: 180px; object-fit: cover;">
+                        {% else %}
+                        <img src="https://placehold.co/600x400?text=Product" class="card-img-top" alt="{{ related.name }}" style="height: 180px; object-fit: cover;">
+                        {% endif %}
+                        
+                        <div class="position-absolute top-0 end-0 p-2">
+                            <span class="badge bg-success">₹{{ related.price }}</span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ related.name }}</h5>
+                            <p class="card-text text-truncate">{{ related.description }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'farm_core:product_detail' pk=related.id %}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-eye"></i> {% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function incrementQuantity() {
+        const input = document.getElementById('quantity');
+        const max = parseInt(input.getAttribute('max'));
+        const currentValue = parseInt(input.value);
+        if (currentValue < max) {
+            input.value = currentValue + 1;
+        }
+    }
+    
+    function decrementQuantity() {
+        const input = document.getElementById('quantity');
+        const currentValue = parseInt(input.value);
+        if (currentValue > 1) {
+            input.value = currentValue - 1;
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,84 @@
+{% extends 'farm_core/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Database Migration" %} - FarmConnect{% endblock %}
+
+{% block custom_css %}
+<style>
+    .migration-container {
+        max-width: 650px;
+        margin: 80px auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .migration-title {
+        font-size: 1.8rem;
+        color: #2e7d32;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .migration-content {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+    
+    .migration-status {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border-left: 4px solid #2e7d32;
+    }
+    
+    .migration-error {
+        border-left-color: #d32f2f;
+    }
+    
+    .migration-button {
+        display: block;
+        text-align: center;
+        margin: 30px auto 10px;
+        padding: 12px 24px;
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .migration-button:hover {
+        background-color: #1b5e20;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container migration-container">
+    <h1 class="migration-title">{% trans "Database Migration Required" %}</h1>
+    
+    <div class="migration-content">
+        <p>{% trans "The application database needs to be updated to support new features." %}</p>
+        <p>{% trans "This is a one-time process that will add several new fields to the database." %}</p>
+        
+        {% if migration_result %}
+            <div class="migration-status {% if 'Error' in migration_result %}migration-error{% endif %}">
+                {{ migration_result }}
+            </div>
+        {% endif %}
+        
+        <p>{% trans "Click the button below to run the migration. This may take a few moments." %}</p>
+    </div>
+    
+    <a href="{% url 'farm_core:run_migrations' %}" class="migration-button">
+        {% trans "Run Migration" %}
+    </a>
+</div>
+{% endblock %} 
