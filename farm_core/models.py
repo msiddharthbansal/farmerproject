@@ -13,8 +13,25 @@ class User(AbstractUser):
     address = models.TextField(blank=True, null=True)
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     
+    # NPOP Certificate fields
+    npop_certificate_number = models.CharField(max_length=100, blank=True, null=True)
+    npop_certificate_issue_date = models.DateField(blank=True, null=True)
+    npop_certificate_expiry_date = models.DateField(blank=True, null=True)
+    npop_certificate_file = models.FileField(upload_to='npop_certificates/', blank=True, null=True)
+    
     def __str__(self):
         return f"{self.username} ({self.get_user_type_display()})"
+    
+    @property
+    def is_npop_verified(self):
+        """Check if the farmer has a valid NPOP certificate"""
+        from datetime import date
+        if self.user_type != 'farmer':
+            return False
+        if not self.npop_certificate_number or not self.npop_certificate_expiry_date:
+            return False
+        # Check if certificate is still valid
+        return self.npop_certificate_expiry_date >= date.today()
 
 
 class ProductCategory(models.Model):
@@ -61,6 +78,24 @@ class Product(models.Model):
     
     def __str__(self):
         return self.name
+
+    @property
+    def avg_rating(self):
+        """Calculate the average rating for this product"""
+        reviews = self.reviews.all()
+        if reviews.exists():
+            return reviews.aggregate(models.Avg('rating'))['rating__avg']
+        return 0
+    
+    @property
+    def review_count(self):
+        """Count the number of reviews for this product"""
+        return self.reviews.count()
+    
+    @property
+    def latest_reviews(self):
+        """Return the 5 most recent reviews"""
+        return self.reviews.all()[:5]
 
 
 class Order(models.Model):
@@ -156,3 +191,26 @@ class PaymentTransaction(models.Model):
     
     def __str__(self):
         return f"Payment #{self.id} - {self.order.id} - {self.payment_status}"
+
+
+class ProductReview(models.Model):
+    RATING_CHOICES = (
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    )
+    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    review_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('product', 'user')  # One review per product per user
+    
+    def __str__(self):
+        return f"{self.user.username}'s {self.rating}-star review on {self.product.name}"

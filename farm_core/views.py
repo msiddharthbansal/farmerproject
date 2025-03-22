@@ -1,15 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Avg
 from django.contrib.auth import logout as auth_logout
 from django.utils import timezone
 from django.http import HttpResponse
-from .models import User, Product, ProductCategory, Order, CartItem, PaymentTransaction
-from .forms import UserSignupForm, ProductForm, OrderForm, UserProfileForm
+from .models import User, Product, ProductCategory, Order, CartItem, PaymentTransaction, ProductReview
+from .forms import UserSignupForm, ProductForm, OrderForm, UserProfileForm, ProductReviewForm, FarmerProfileForm
 from django.utils.safestring import mark_safe
 
 # Temporary migration view
@@ -480,6 +480,60 @@ class ProductDetailView(DetailView):
     model = Product
     template_name = 'farm_core/products/detail.html'
     context_object_name = 'product'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add review form for logged-in users
+        if self.request.user.is_authenticated:
+            # Check if user already reviewed this product
+            user_review = ProductReview.objects.filter(
+                product=self.object, 
+                user=self.request.user
+            ).first()
+            
+            if user_review:
+                context['user_review'] = user_review
+                context['form'] = ProductReviewForm(instance=user_review)
+            else:
+                context['form'] = ProductReviewForm()
+                
+        # Get latest reviews for this product
+        context['reviews'] = self.object.latest_reviews
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, _('You must be logged in to submit a review.'))
+            return redirect('farm_core:login')
+            
+        self.object = self.get_object()
+        
+        # Check if user already reviewed this product
+        user_review = ProductReview.objects.filter(
+            product=self.object, 
+            user=request.user
+        ).first()
+        
+        if user_review:
+            # Update existing review
+            form = ProductReviewForm(request.POST, instance=user_review)
+            success_message = _('Your review has been updated.')
+        else:
+            # Create new review
+            form = ProductReviewForm(request.POST)
+            success_message = _('Thank you for your review!')
+        
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = self.object
+            review.user = request.user
+            review.save()
+            
+            messages.success(request, success_message)
+        else:
+            messages.error(request, _('There was an error with your review. Please try again.'))
+            
+        return redirect('farm_core:product_detail', pk=self.object.pk)
 
 class CategoryProductListView(ListView):
     model = Product
@@ -850,12 +904,36 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
 class ProfileEditView(LoginRequiredMixin, UpdateView):
     model = User
-    form_class = UserProfileForm
     template_name = 'farm_core/profile/edit.html'
     success_url = reverse_lazy('farm_core:profile')
     
     def get_object(self):
         return self.request.user
+    
+    def get_form_class(self):
+        # Use different form class based on user type
+        if self.request.user.user_type == 'farmer':
+            from .forms import FarmerProfileForm
+            return FarmerProfileForm
+        else:
+            from .forms import UserProfileForm
+            return UserProfileForm
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add user to context explicitly
+        context['user'] = self.request.user
+        
+        # Add NPOP certificate expiry warning for farmers if certificate is about to expire
+        if self.request.user.user_type == 'farmer' and self.request.user.npop_certificate_expiry_date:
+            from datetime import date, timedelta
+            today = date.today()
+            # If certificate expires within 30 days, add warning message
+            if self.request.user.npop_certificate_expiry_date - today <= timedelta(days=30):
+                days_remaining = (self.request.user.npop_certificate_expiry_date - today).days
+                context['npop_expiry_warning'] = True
+                context['days_until_expiry'] = days_remaining
+        return context
     
     def form_valid(self, form):
         messages.success(self.request, _('Profile updated successfully.'))

@@ -41,6 +41,13 @@
         color: red;
         margin-left: 4px;
     }
+    /* NPOP certificate styles */
+    .star-rating-input label i.bi-star-fill {
+        color: #ffc107;
+    }
+    .star-rating-input label i.bi-star {
+        color: #e2e2e2;
+    }
 </style>
 {% endblock %}
 
@@ -56,14 +63,15 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h1 class="h3 mb-0">{% trans "Edit Your Profile" %}</h1>
-                </div>
-                <div class="card-body p-4">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Profile Information -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h1 class="h3 mb-0">{% trans "Edit Your Profile" %}</h1>
+                    </div>
+                    <div class="card-body p-4">
                         {% if form.errors %}
                         <div class="alert alert-danger" role="alert">
                             <h5 class="alert-heading">{% trans "Please correct the following errors" %}:</h5>
@@ -83,8 +91,8 @@
                         <div class="row">
                             <!-- Profile Picture Section -->
                             <div class="col-md-4 text-center mb-4">
-                                {% if profile_user.profile_pic %}
-                                <img src="{{ profile_user.profile_pic.url }}" alt="{{ profile_user.get_full_name }}" class="profile-pic-preview">
+                                {% if user.profile_pic %}
+                                <img src="{{ user.profile_pic.url }}" alt="{{ user.get_full_name }}" class="profile-pic-preview">
                                 {% else %}
                                 <div class="profile-pic-placeholder mx-auto">
                                     <i class="bi bi-person"></i>
@@ -103,6 +111,10 @@
                             <!-- Profile Details Section -->
                             <div class="col-md-8">
                                 <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label for="{{ form.username.id_for_label }}" class="form-label required-field">{% trans "Username" %}</label>
+                                        {{ form.username }}
+                                    </div>
                                     <div class="col-md-6">
                                         <label for="{{ form.first_name.id_for_label }}" class="form-label required-field">{% trans "First Name" %}</label>
                                         {{ form.first_name }}
@@ -116,10 +128,6 @@
                                         {{ form.email }}
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="{{ form.username.id_for_label }}" class="form-label required-field">{% trans "Username" %}</label>
-                                        {{ form.username }}
-                                    </div>
-                                    <div class="col-md-6">
                                         <label for="{{ form.phone.id_for_label }}" class="form-label">{% trans "Phone Number" %}</label>
                                         {{ form.phone }}
                                     </div>
@@ -130,34 +138,100 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- NPOP Certificate Section (for farmers only) -->
+                {% if user.user_type == 'farmer' %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            {% trans "NPOP Certification" %}
+                            {% if user.is_npop_verified %}
+                            <span class="badge bg-success ms-2"><i class="bi bi-patch-check-fill"></i> {% trans "Valid" %}</span>
+                            {% elif user.npop_certificate_number %}
+                            <span class="badge bg-danger ms-2"><i class="bi bi-x-circle-fill"></i> {% trans "Expired" %}</span>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if npop_expiry_warning %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            {% if days_until_expiry > 0 %}
+                            {% blocktrans %}Your NPOP certificate will expire in {{ days_until_expiry }} days. Please renew it soon.{% endblocktrans %}
+                            {% else %}
+                            {% trans "Your NPOP certificate has expired. Please renew it immediately to maintain your verified status." %}
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         
-                        <hr class="my-4">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password1.id_for_label }}" class="form-label">{% trans "New Password" %} <small class="text-muted">({% trans "leave blank to keep current password" %})</small></label>
-                                {{ form.password1 }}
-                                {% if form.password1.help_text %}
-                                <div class="form-text text-muted small">{{ form.password1.help_text }}</div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.npop_certificate_number.id_for_label }}" class="form-label">{% trans "Certificate Number" %}</label>
+                                {{ form.npop_certificate_number }}
+                                {% if form.npop_certificate_number.help_text %}
+                                <div class="form-text text-muted small">{{ form.npop_certificate_number.help_text }}</div>
+                                {% endif %}
+                                {% if form.npop_certificate_number.errors %}
+                                <div class="invalid-feedback d-block">{{ form.npop_certificate_number.errors }}</div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password2.id_for_label }}" class="form-label">{% trans "Confirm New Password" %}</label>
-                                {{ form.password2 }}
+                            <div class="col-md-6">
+                                <label for="{{ form.npop_certificate_file.id_for_label }}" class="form-label">{% trans "Certificate Document" %}</label>
+                                {{ form.npop_certificate_file }}
+                                {% if form.npop_certificate_file.help_text %}
+                                <div class="form-text text-muted small">{{ form.npop_certificate_file.help_text }}</div>
+                                {% endif %}
+                                {% if form.npop_certificate_file.errors %}
+                                <div class="invalid-feedback d-block">{{ form.npop_certificate_file.errors }}</div>
+                                {% endif %}
+                                {% if user.npop_certificate_file %}
+                                <div class="mt-2">
+                                    <a href="{{ user.npop_certificate_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-earmark-pdf"></i> {% trans "View Current Certificate" %}
+                                    </a>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'farm_core:profile' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> {% trans "Back to Profile" %}
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check2-circle me-1"></i> {% trans "Save Changes" %}
-                            </button>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="{{ form.npop_certificate_issue_date.id_for_label }}" class="form-label">{% trans "Issue Date" %}</label>
+                                {{ form.npop_certificate_issue_date }}
+                                {% if form.npop_certificate_issue_date.help_text %}
+                                <div class="form-text text-muted small">{{ form.npop_certificate_issue_date.help_text }}</div>
+                                {% endif %}
+                                {% if form.npop_certificate_issue_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.npop_certificate_issue_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.npop_certificate_expiry_date.id_for_label }}" class="form-label">{% trans "Expiry Date" %}</label>
+                                {{ form.npop_certificate_expiry_date }}
+                                {% if form.npop_certificate_expiry_date.help_text %}
+                                <div class="form-text text-muted small">{{ form.npop_certificate_expiry_date.help_text }}</div>
+                                {% endif %}
+                                {% if form.npop_certificate_expiry_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.npop_certificate_expiry_date.errors }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+                {% endif %}
+                
+                <!-- Form Submission Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 mb-5">
+                    <a href="{% url 'farm_core:profile' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> {% trans "Back to Profile" %}
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check2-circle me-1"></i> {% trans "Save Changes" %}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

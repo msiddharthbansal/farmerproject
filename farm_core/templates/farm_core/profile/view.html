@@ -79,8 +79,29 @@
                     {% if profile_user.phone %}
                     <span class="ms-2"><i class="bi bi-telephone"></i> {{ profile_user.phone }}</span>
                     {% endif %}
+                    
+                    {% if profile_user.user_type == 'farmer' and profile_user.is_npop_verified %}
+                    <span class="ms-2 badge bg-success">
+                        <i class="bi bi-patch-check-fill"></i> NPOP Verified
+                    </span>
+                    {% endif %}
                 </p>
                 <p class="mb-1">{% trans "Member since" %}: {{ profile_user.date_joined|date }}</p>
+                
+                {% if profile_user.user_type == 'farmer' and profile_user.npop_certificate_number %}
+                <div class="mt-2 npop-info {% if not profile_user.is_npop_verified %}text-danger{% endif %}">
+                    <p class="mb-1">
+                        <strong>NPOP Certificate:</strong> {{ profile_user.npop_certificate_number }}
+                        {% if profile_user.is_npop_verified %}
+                        <span class="text-success"><i class="bi bi-check-circle-fill"></i> Valid</span>
+                        {% else %}
+                        <span class="text-danger"><i class="bi bi-x-circle-fill"></i> Expired</span>
+                        {% endif %}
+                    </p>
+                    <p class="mb-1"><small>Issued: {{ profile_user.npop_certificate_issue_date|date }}</small></p>
+                    <p class="mb-1"><small>Expires: {{ profile_user.npop_certificate_expiry_date|date }}</small></p>
+                </div>
+                {% endif %}
             </div>
             <div class="col-md-3 text-center text-md-end">
                 <a href="{% url 'farm_core:edit_profile' %}" class="btn btn-primary">

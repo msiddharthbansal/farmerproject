@@ -35,6 +35,49 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.25rem;
+    }
+    .star-rating .inactive {
+        color: #e2e2e2;
+    }
+    .reviews-summary {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+    }
+    .review-item {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    .review-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .star-rating-input {
+        display: inline-flex;
+    }
+    .star-rating-input input {
+        display: none;
+    }
+    .star-rating-input label {
+        cursor: pointer;
+        font-size: 25px;
+        color: #e2e2e2;
+        margin: 0 2px;
+    }
+    .star-rating-input .rating-group {
+        display: inline-flex;
+        flex-direction: row-reverse;
+    }
+    .star-rating-input label i.bi-star-fill {
+        color: #ffc107;
+    }
+    .star-rating-input label i.bi-star {
+        color: #e2e2e2;
+    }
 </style>
 {% endblock %}
 
@@ -122,6 +165,22 @@
                         </div>
                     </div>
                     
+                    <!-- Star Rating Display -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="star-rating me-2">
+                            {% for i in "12345"|make_list %}
+                                {% if forloop.counter <= product.avg_rating %}
+                                <i class="bi bi-star-fill"></i>
+                                {% elif forloop.counter <= product.avg_rating|add:"0.5" and forloop.counter > product.avg_rating %}
+                                <i class="bi bi-star-half"></i>
+                                {% else %}
+                                <i class="bi bi-star inactive"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-muted">{{ product.avg_rating|floatformat:1 }} ({{ product.review_count }} {% trans "reviews" %})</span>
+                    </div>
+                    
                     <hr>
                     
                     <div class="mb-4">
@@ -195,7 +254,14 @@
                     </div>
                     {% endif %}
                     <div>
-                        <h5 class="mb-1">{{ product.farmer.get_full_name|default:product.farmer.username }}</h5>
+                        <h5 class="mb-1">
+                            {{ product.farmer.get_full_name|default:product.farmer.username }}
+                            {% if product.farmer.is_npop_verified %}
+                            <span class="badge bg-success ms-2" data-bs-toggle="tooltip" title="NPOP Certified Organic Farmer">
+                                <i class="bi bi-patch-check-fill"></i> NPOP Verified
+                            </span>
+                            {% endif %}
+                        </h5>
                         <div class="text-muted small mb-2">{% trans "Farmer" %}</div>
                         <a href="#" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-shop"></i> {% trans "View All Products" %}
@@ -222,7 +288,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane" type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">
-                        {% trans "Reviews" %}
+                        {% trans "Reviews" %} ({{ product.review_count }})
                     </button>
                 </li>
             </ul>
@@ -260,6 +326,18 @@
                                         <th scope="row">{% trans "Last Updated" %}</th>
                                         <td>{{ product.updated_at|date }}</td>
                                     </tr>
+                                    {% if product.is_organic %}
+                                    <tr>
+                                        <th scope="row">{% trans "Organic Status" %}</th>
+                                        <td>
+                                            {% if product.farmer.is_npop_verified %}
+                                            <span class="text-success"><i class="bi bi-patch-check-fill"></i> {% trans "NPOP Certified Organic" %}</span>
+                                            {% else %}
+                                            <span class="text-success"><i class="bi bi-check-circle"></i> {% trans "Organic" %}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
                                 </tbody>
                             </table>
                         </div>
@@ -289,43 +367,113 @@
                     </div>
                 </div>
                 <div class="tab-pane fade" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
-                    <h5>{% trans "Customer Reviews" %}</h5>
-                    
-                    <!-- Sample Reviews -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-2">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-person-circle me-2" style="font-size: 1.5rem;"></i>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="reviews-summary mb-4">
+                                <h5 class="mb-3">{% trans "Review Summary" %}</h5>
+                                <div class="d-flex align-items-center mb-3">
+                                    <h2 class="mb-0 me-2">{{ product.avg_rating|floatformat:1 }}</h2>
                                     <div>
-                                        <h6 class="mb-0">{% trans "Sample Customer" %}</h6>
-                                        <div class="text-muted small">{% trans "2 weeks ago" %}</div>
+                                        <div class="star-rating">
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= product.avg_rating %}
+                                                <i class="bi bi-star-fill"></i>
+                                                {% elif forloop.counter <= product.avg_rating|add:"0.5" and forloop.counter > product.avg_rating %}
+                                                <i class="bi bi-star-half"></i>
+                                                {% else %}
+                                                <i class="bi bi-star inactive"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <div class="text-muted">{{ product.review_count }} {% trans "reviews" %}</div>
                                     </div>
                                 </div>
-                                <div class="text-warning">
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-fill"></i>
-                                    <i class="bi bi-star-half"></i>
+                            </div>
+
+                            {% if user.is_authenticated %}
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">{% if user_review %}{% trans "Edit Your Review" %}{% else %}{% trans "Write a Review" %}{% endif %}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" action="{% url 'farm_core:product_detail' pk=product.id %}">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label class="form-label">{% trans "Your Rating" %} <span class="text-danger">*</span></label>
+                                            <div class="star-rating-input mb-2">
+                                                <div class="rating-group">
+                                                    {% for value, label in form.rating.field.choices %}
+                                                    <input type="radio" id="rating-{{ value }}" name="rating" value="{{ value }}" {% if form.rating.value|add:"0" == value %}checked{% endif %} required>
+                                                    <label for="rating-{{ value }}"><i class="bi bi-star-fill"></i></label>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="{{ form.review_text.id_for_label }}" class="form-label">{% trans "Your Review" %} <span class="text-danger">*</span></label>
+                                            {{ form.review_text }}
+                                        </div>
+                                        <button type="submit" class="btn btn-success">
+                                            {% if user_review %}
+                                            <i class="bi bi-check2-circle"></i> {% trans "Update Review" %}
+                                            {% else %}
+                                            <i class="bi bi-check2-circle"></i> {% trans "Submit Review" %}
+                                            {% endif %}
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
-                            <p>{% trans "The products were incredibly fresh and tasty. Excellent quality and arrived in perfect condition." %}</p>
+                            {% else %}
+                            <div class="card mb-4 text-center">
+                                <div class="card-body">
+                                    <p>{% trans "Login to write a review" %}</p>
+                                    <a href="{% url 'farm_core:login' %}?next={{ request.path }}" class="btn btn-outline-success">
+                                        <i class="bi bi-box-arrow-in-right"></i> {% trans "Login" %}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
-                    </div>
-                    
-                    <!-- More Reviews Placeholder -->
-                    <div class="text-center py-3">
-                        <p>{% trans "Be the first to review this product!" %}</p>
-                        {% if user.is_authenticated %}
-                        <button class="btn btn-outline-success">
-                            <i class="bi bi-pencil"></i> {% trans "Write a Review" %}
-                        </button>
-                        {% else %}
-                        <a href="{% url 'farm_core:login' %}" class="btn btn-outline-success">
-                            <i class="bi bi-box-arrow-in-right"></i> {% trans "Login to Write a Review" %}
-                        </a>
-                        {% endif %}
+                        
+                        <div class="col-md-8">
+                            <h5 class="mb-4">{% trans "Customer Reviews" %} ({{ product.review_count }})</h5>
+                            
+                            {% if reviews %}
+                                {% for review in reviews %}
+                                <div class="review-item">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <div class="d-flex align-items-center">
+                                            {% if review.user.profile_pic %}
+                                            <img src="{{ review.user.profile_pic.url }}" class="rounded-circle me-2" width="40" height="40" alt="{{ review.user.get_full_name }}">
+                                            {% else %}
+                                            <i class="bi bi-person-circle me-2" style="font-size: 1.5rem;"></i>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ review.user.get_full_name|default:review.user.username }}</h6>
+                                                <div class="text-muted small">{{ review.created_at|timesince }} {% trans "ago" %}</div>
+                                            </div>
+                                        </div>
+                                        <div class="star-rating">
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= review.rating %}
+                                                <i class="bi bi-star-fill"></i>
+                                                {% else %}
+                                                <i class="bi bi-star inactive"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="mb-0">{{ review.review_text }}</p>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-chat-square-text display-3 text-muted mb-3"></i>
+                                <h5>{% trans "No Reviews Yet" %}</h5>
+                                <p class="text-muted">{% trans "Be the first to review this product!" %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -352,7 +500,18 @@
                         
                         <div class="card-body">
                             <h5 class="card-title">{{ related.name }}</h5>
-                            <p class="card-text text-truncate">{{ related.description }}</p>
+                            <div class="star-rating small mb-2">
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= related.avg_rating %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% elif forloop.counter <= related.avg_rating|add:"0.5" and forloop.counter > related.avg_rating %}
+                                    <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                    <i class="bi bi-star inactive"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="text-muted ms-1">({{ related.review_count }})</span>
+                            </div>
                         </div>
                         <div class="card-footer bg-transparent">
                             <a href="{% url 'farm_core:product_detail' pk=related.id %}" class="btn btn-outline-success w-100">
@@ -369,6 +528,81 @@
 
 {% block extra_js %}
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make the Reviews tab active if the URL contains the reviews anchor
+        if (window.location.hash === '#reviews') {
+            document.getElementById('reviews-tab').click();
+        }
+        
+        // Star rating input functionality
+        const starLabels = document.querySelectorAll('.star-rating-input label');
+        const ratingInputs = document.querySelectorAll('.star-rating-input input');
+        
+        // Initialize stars based on selected rating
+        function updateStarsFromInput() {
+            const checkedInput = document.querySelector('.star-rating-input input:checked');
+            if (checkedInput) {
+                const checkedValue = parseInt(checkedInput.value);
+                starLabels.forEach((label, index) => {
+                    const labelValue = 5 - index; // Since they're in reverse order
+                    if (labelValue <= checkedValue) {
+                        label.querySelector('i').className = 'bi bi-star-fill';
+                    } else {
+                        label.querySelector('i').className = 'bi bi-star';
+                    }
+                });
+            } else {
+                // Reset all stars if nothing is checked
+                starLabels.forEach(label => {
+                    label.querySelector('i').className = 'bi bi-star';
+                });
+            }
+        }
+        
+        // Initial state
+        updateStarsFromInput();
+        
+        // Handle mouseover
+        starLabels.forEach((label, index) => {
+            label.addEventListener('mouseover', () => {
+                const hoverValue = 5 - index; // Since they're in reverse order
+                
+                starLabels.forEach((l, i) => {
+                    const labelValue = 5 - i;
+                    if (labelValue <= hoverValue) {
+                        l.querySelector('i').className = 'bi bi-star-fill';
+                    } else {
+                        l.querySelector('i').className = 'bi bi-star';
+                    }
+                });
+            });
+            
+            // Handle click
+            label.addEventListener('click', () => {
+                const clickedValue = 5 - index; // Since they're in reverse order
+                
+                // Find and check the corresponding radio input
+                const radioInput = document.querySelector(`#rating-${clickedValue}`);
+                if (radioInput) {
+                    radioInput.checked = true;
+                    
+                    // Update all stars to reflect the selection
+                    starLabels.forEach((l, i) => {
+                        const labelValue = 5 - i;
+                        if (labelValue <= clickedValue) {
+                            l.querySelector('i').className = 'bi bi-star-fill';
+                        } else {
+                            l.querySelector('i').className = 'bi bi-star';
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Reset stars when mouse leaves the container based on selection
+        document.querySelector('.rating-group').addEventListener('mouseleave', updateStarsFromInput);
+    });
+    
     function incrementQuantity() {
         const input = document.getElementById('quantity');
         const max = parseInt(input.getAttribute('max'));
