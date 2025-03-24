@@ -84,8 +84,4 @@ To get a local copy up and running, follow these steps:
 
 ## License
 
-This project is licensed under the MIT License.
-
----
-
-*Note: Please replace the placeholder `[Specify License Here]` with the actual license details.*
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
