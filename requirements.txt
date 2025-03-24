@@ -1,0 +1,6 @@
+Django==3.2
+djangorestframework==3.12.4
+sqlite3  # Built-in with Python but included for clarity
+django-allauth==0.51.0  # For authentication (optional)
+Pillow==9.0.1  # For handling image uploads
+python-dotenv==1.0.0  # For managing environment variables
