@@ -65,15 +65,15 @@ To get a local copy up and running, follow these steps:
 
 ### Consumer Interface (Product Listings)
 ![Screenshot from 2025-03-24 15-11-41](https://github.com/user-attachments/assets/ed593117-778b-42e0-a25e-14ab7f0b9cab)
-)
+
 
 ### Farmer Interface (Add Product Page)
-(![Screenshot from 2025-03-24 15-12-21](https://github.com/user-attachments/assets/b8af3b38-1692-48aa-bc01-92d0c605a63c)
-)
+![Screenshot from 2025-03-24 15-12-21](https://github.com/user-attachments/assets/b8af3b38-1692-48aa-bc01-92d0c605a63c)
+
 
 ### Order Placed Page
-(![Screenshot from 2025-03-24 15-12-54](https://github.com/user-attachments/assets/49338654-00eb-4f1d-a208-3e0058f354d5)
-)
+![Screenshot from 2025-03-24 15-12-54](https://github.com/user-attachments/assets/49338654-00eb-4f1d-a208-3e0058f354d5)
+
 
 ## Usage
 
