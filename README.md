@@ -54,6 +54,28 @@ To get a local copy up and running, follow these steps:
    ```bash
    python manage.py runserver
    ```
+   
+## Screenshots
+
+### Login & Sign Up Page  
+<p align="center">
+    <img src="![Screenshot from 2025-03-24 15-11-04](https://github.com/user-attachments/assets/28226b5e-bb6f-4b97-8151-2528d07fb01f)
+" width="45%" alt="Login Page">
+    <img src="![Screenshot from 2025-03-24 15-09-56](https://github.com/user-attachments/assets/88953375-f02e-4672-99d7-6de95e07d67b)
+" width="45%" alt="Sign Up Page">
+</p>
+
+### Consumer Interface (Product Listings)
+![Consumer Interface](![Screenshot from 2025-03-24 15-11-41](https://github.com/user-attachments/assets/ed593117-778b-42e0-a25e-14ab7f0b9cab)
+)
+
+### Farmer Interface (Add Product Page)
+![Farmer Interface](![Screenshot from 2025-03-24 15-12-21](https://github.com/user-attachments/assets/b8af3b38-1692-48aa-bc01-92d0c605a63c)
+)
+
+### Order Placed Page
+![Order Placed](![Screenshot from 2025-03-24 15-12-54](https://github.com/user-attachments/assets/49338654-00eb-4f1d-a208-3e0058f354d5)
+)
 
 ## Usage
 
